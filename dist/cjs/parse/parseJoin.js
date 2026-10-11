@@ -1,6 +1,10 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("../utils/index.js");
+const parseQuery_js_1 = __importDefault(require("./parseQuery.js"));
 const aggregate_js_1 = require("./operators/aggregate.js");
 const joinOperators = {
     $eq: "=",
@@ -70,14 +74,20 @@ function parseJoin(joins) {
                 throw new Error(`Invalid JOIN condition: ${key}`);
             }).join(" AND ");
         }
+        let whereStr = "";
+        if (item.query) {
+            const { sql: querySql, params: queryParams } = (0, parseQuery_js_1.default)(item.query);
+            params.push(...queryParams);
+            whereStr = ` WHERE ${querySql}`;
+        }
         const joinOn = onStr ? ` ON ${onStr}` : "";
         // 3. 根据类型生成 SQL
         if (item.type === 'self') {
-            return { sql: ` INNER JOIN ${(0, index_js_1.quote)(item.table)} AS ${(0, index_js_1.quote)(tableAlias)}${joinOn}`, select };
+            return { sql: ` INNER JOIN ${(0, index_js_1.quote)(item.table)} AS ${(0, index_js_1.quote)(tableAlias)}${joinOn} ${whereStr}`, select };
         }
         else {
             const joinType = aggregate_js_1.JoinTypeMap[item.type || 'inner']; // 默认 inner
-            return { sql: ` ${joinType} ${(0, index_js_1.quote)(item.table)} AS ${(0, index_js_1.quote)(tableAlias)}${joinOn}`, select };
+            return { sql: ` ${joinType} ${(0, index_js_1.quote)(item.table)} AS ${(0, index_js_1.quote)(tableAlias)}${joinOn}  ${whereStr}`, select };
         }
     });
     return {

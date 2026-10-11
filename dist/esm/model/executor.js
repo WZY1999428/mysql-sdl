@@ -1,6 +1,5 @@
 import { parseOrder, parseQuery, parseUpdate, parseAggregate } from "../parse/index.js";
-import { DataType } from "../schema/index.js";
-import { quote, buildFields } from "../utils/index.js";
+import { quote, buildFields, normalizeSqlValue } from "../utils/index.js";
 import debug from "../utils/logger.js";
 import parseJoin from "../parse/parseJoin.js";
 class Executor {
@@ -186,15 +185,7 @@ class Executor {
             const value = data[key];
             const quotedKey = quote(key);
             fields.push(quotedKey);
-            if (fieldType === DataType.Json && typeof value === "object" && value != null) {
-                params.push(JSON.stringify(value));
-            }
-            else {
-                if (value === undefined || value === "")
-                    params.push(null);
-                else
-                    params.push(value);
-            }
+            params.push(normalizeSqlValue(value));
         }
         return { fields, params };
     }
@@ -252,7 +243,7 @@ class Executor {
                 // 2. 重复占位符，生成 "(?, ?), (?, ?), (?, ?)"
                 const valuesSql = batchData.map(() => placeholders).join(', ');
                 // 3. 展平所有数据为一个一维数组 [val1, val2, val3, val4...]
-                const params = batchData.flatMap(item => columns.map(col => item[col]));
+                const params = batchData.flatMap(item => columns.map(col => normalizeSqlValue(item[col])));
                 let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${quote(this.table)} (${quotedColumns}) VALUES ${valuesSql}`;
                 if (upsert) {
                     const updateFields = Array.isArray(upsert)

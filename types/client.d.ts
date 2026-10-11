@@ -3,6 +3,7 @@ type Result = QueryResult | ResultSetHeader;
 export type newConnection = Connection | PoolConnection;
 type Options = PoolOptions & {
     release?: boolean;
+    createDatabase?: boolean;
 };
 declare class Client {
     private conn;

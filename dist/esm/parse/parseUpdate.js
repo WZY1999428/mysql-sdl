@@ -1,4 +1,4 @@
-import { parseJson, quote } from "../utils/index.js";
+import { parseJson, quote, normalizeSqlValue } from "../utils/index.js";
 function throwIfObject(key, value) {
     if (typeof value !== "object" || value === null || Array.isArray(value)) {
         throw new Error(`Invalid value for ${key} operator: ${JSON.stringify(value)}`);
@@ -44,15 +44,7 @@ export default function parseUpdate(data, schema) {
             throw new Error(`Field ${operator} not found in schema`);
         }
         setSql.push(`${parseJson(operator)} = ?`);
-        if (typeof value === "object" && value != null) {
-            params.push(JSON.stringify(value));
-        }
-        else {
-            if (value === undefined || value === "")
-                params.push(null);
-            else
-                params.push(value);
-        }
+        params.push(normalizeSqlValue(value));
     }
     return { sql: setSql.join(', '), params };
 }

@@ -21,24 +21,25 @@ class Client {
         const { database, ...connectionConfig } = options;
         const conn = await promise_1.default.createConnection(connectionConfig);
         if (database) {
-            await this.createDataBase(database, conn);
+            await Client.createDataBase(database, conn);
         }
         return new Client(conn);
     }
     static async connectionPool(options) {
-        // const { database, ...connectionConfig } = options;
-        const database = options.database;
-        const pool = promise_1.default.createPool(options);
-        if (database) {
-            const conn = await pool.getConnection();
+        const { database, createDatabase = false, ...initConfig } = options;
+        if (database && createDatabase) {
+            const initPool = promise_1.default.createPool(initConfig);
+            const conn = await initPool.getConnection();
             await conn.query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4;`);
             conn.release();
+            await initPool.end();
         }
         const instance = new Client();
         instance.isPool = true;
-        instance.dbPoll = pool;
-        instance.release = options.release || true;
         instance.database = database || '';
+        const { createDatabase: _, ...poolConfig } = options;
+        instance.dbPoll = promise_1.default.createPool(poolConfig);
+        instance.release = options.release || true;
         return instance;
     }
     async getConnection() {

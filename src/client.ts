@@ -34,8 +34,8 @@ class Client {
 
     public static async connectionPool(options: Options): Promise<Client> {
         const { database, createDatabase = false, ...initConfig } = options;
-        const initPool = mysql.createPool(initConfig);
         if (database && createDatabase) {
+            const initPool = mysql.createPool(initConfig);
             const conn = await initPool.getConnection();
             await (conn as any).query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4;`);
             conn.release();

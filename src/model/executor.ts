@@ -4,7 +4,7 @@ import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, Mat
 import { newConnection, } from "../client.js";
 import { Schema, DataType } from "../schema/index.js";
 import Client from "../client.js";
-import { quote, buildFields } from "../utils/index.js";
+import { quote, buildFields, normalizeSqlValue } from "../utils/index.js";
 import debug from "../utils/logger.js";
 
 import parseJoin from "../parse/parseJoin.js"
@@ -71,7 +71,7 @@ class Executor<T> {
     }
 
     execute(joinSql: string, params: any[]) {
-        
+
         if (Executor.debug) {
             debug.loggerSql(joinSql, params);
         }
@@ -106,7 +106,7 @@ class Executor<T> {
 
     async count<T>(options: MathOptions<T>): Promise<number> {
         const { sql, params } = this.buildMathSql('COUNT', options);
-        
+
         const result: any = await this.execute(sql, params)
         return Number(result?.[0]?.total || 0);
     }
@@ -238,14 +238,8 @@ class Executor<T> {
 
             const value = data[key];
             const quotedKey = quote(key);
-
             fields.push(quotedKey);
-            if (fieldType === DataType.Json && typeof value === "object" && value != null) {
-                params.push(JSON.stringify(value));
-            } else {
-                if (value === undefined || value === "") params.push(null);
-                else params.push(value);
-            }
+            params.push(normalizeSqlValue(value));
         }
 
         return { fields, params };
@@ -306,7 +300,7 @@ class Executor<T> {
                 // 2. 重复占位符，生成 "(?, ?), (?, ?), (?, ?)"
                 const valuesSql = batchData.map(() => placeholders).join(', ');
                 // 3. 展平所有数据为一个一维数组 [val1, val2, val3, val4...]
-                const params = batchData.flatMap(item => columns.map(col => (item as any)[col]));
+                const params = batchData.flatMap(item => columns.map(col => normalizeSqlValue((item as any)[col])));
                 let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${quote(this.table)} (${quotedColumns}) VALUES ${valuesSql}`;
                 if (upsert) {
                     const updateFields = Array.isArray(upsert)

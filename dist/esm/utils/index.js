@@ -132,3 +132,14 @@ export function buildFields(fields = "*") {
     }
     return { fields, params: [] }; // 如果是字符串且不是 *，建议也处理下或者直接透传
 }
+export function normalizeSqlValue(value) {
+    if (typeof value === "object" && value != null) {
+        return JSON.stringify(value);
+    }
+    else {
+        if (value === undefined || value === "")
+            return null;
+        else
+            return value;
+    }
+}

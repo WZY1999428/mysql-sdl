@@ -1,4 +1,5 @@
 import { isObject, quote } from "../utils/index.js";
+import parseQuery from "./parseQuery.js";
 import { JoinTypeMap, } from "./operators/aggregate.js";
 const joinOperators = {
     $eq: "=",
@@ -68,14 +69,20 @@ function parseJoin(joins) {
                 throw new Error(`Invalid JOIN condition: ${key}`);
             }).join(" AND ");
         }
+        let whereStr = "";
+        if (item.query) {
+            const { sql: querySql, params: queryParams } = parseQuery(item.query);
+            params.push(...queryParams);
+            whereStr = ` WHERE ${querySql}`;
+        }
         const joinOn = onStr ? ` ON ${onStr}` : "";
         // 3. 根据类型生成 SQL
         if (item.type === 'self') {
-            return { sql: ` INNER JOIN ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}`, select };
+            return { sql: ` INNER JOIN ${quote(item.table)} AS ${quote(tableAlias)}${joinOn} ${whereStr}`, select };
         }
         else {
             const joinType = JoinTypeMap[item.type || 'inner']; // 默认 inner
-            return { sql: ` ${joinType} ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}`, select };
+            return { sql: ` ${joinType} ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}  ${whereStr}`, select };
         }
     });
     return {

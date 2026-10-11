@@ -4,8 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_js_1 = require("../parse/index.js");
-const index_js_2 = require("../schema/index.js");
-const index_js_3 = require("../utils/index.js");
+const index_js_2 = require("../utils/index.js");
 const logger_js_1 = __importDefault(require("../utils/logger.js"));
 const parseJoin_js_1 = __importDefault(require("../parse/parseJoin.js"));
 class Executor {
@@ -79,10 +78,10 @@ class Executor {
             query = await this.schema.hooks.beforeFind(query) || query;
         }
         const { fields = "*", sort = {} } = options;
-        const { fields: bFields, params } = (0, index_js_3.buildFields)(fields);
+        const { fields: bFields, params } = (0, index_js_2.buildFields)(fields);
         const { sql, params: qParams } = (0, index_js_1.parseQuery)(query);
         params.push(...qParams);
-        let joinSql = `SELECT ${bFields} FROM ${(0, index_js_3.quote)(this.table)}`;
+        let joinSql = `SELECT ${bFields} FROM ${(0, index_js_2.quote)(this.table)}`;
         if (sql)
             joinSql += ` WHERE ${sql} `;
         joinSql += ` ${(0, index_js_1.parseOrder)(sort)} LIMIT 1`;
@@ -135,7 +134,7 @@ class Executor {
                 expr = '*';
             }
             else {
-                expr = (0, index_js_3.quote)(field);
+                expr = (0, index_js_2.quote)(field);
                 if (distinct) {
                     expr = `DISTINCT ${expr}`;
                 }
@@ -145,13 +144,13 @@ class Executor {
             if (!options.field || field === '*') {
                 throw new Error(`${mathType} requires a specific field`);
             }
-            expr = (0, index_js_3.quote)(field);
+            expr = (0, index_js_2.quote)(field);
             // DISTINCT 对 MAX / MIN 没有实际意义
             if (distinct && mathType !== 'MAX' && mathType !== 'MIN') {
                 expr = `DISTINCT ${expr}`;
             }
         }
-        let sql = `SELECT ${mathType}(${expr}) AS total FROM ${(0, index_js_3.quote)(this.table)}`;
+        let sql = `SELECT ${mathType}(${expr}) AS total FROM ${(0, index_js_2.quote)(this.table)}`;
         if (joins.length) {
             sql += ` ${(0, parseJoin_js_1.default)(joins).joinSql}`;
         }
@@ -168,10 +167,10 @@ class Executor {
             query = await this.schema.hooks.beforeFind(query) || query;
         }
         const { limit = 0, offset = 0, fields = "*", sort = {} } = options;
-        const { fields: bFields, params } = (0, index_js_3.buildFields)(fields);
+        const { fields: bFields, params } = (0, index_js_2.buildFields)(fields);
         const { sql, params: qParams } = (0, index_js_1.parseQuery)(query);
         params.push(...qParams);
-        let joinSql = `SELECT ${bFields} FROM ${(0, index_js_3.quote)(this.table)}`;
+        let joinSql = `SELECT ${bFields} FROM ${(0, index_js_2.quote)(this.table)}`;
         if (sql)
             joinSql += ` WHERE ${sql} `;
         joinSql += ` ${(0, index_js_1.parseOrder)(sort)} ${this.buildLimit(limit, offset)} `;
@@ -189,17 +188,9 @@ class Executor {
             if (!fieldType)
                 continue;
             const value = data[key];
-            const quotedKey = (0, index_js_3.quote)(key);
+            const quotedKey = (0, index_js_2.quote)(key);
             fields.push(quotedKey);
-            if (fieldType === index_js_2.DataType.Json && typeof value === "object" && value != null) {
-                params.push(JSON.stringify(value));
-            }
-            else {
-                if (value === undefined || value === "")
-                    params.push(null);
-                else
-                    params.push(value);
-            }
+            params.push((0, index_js_2.normalizeSqlValue)(value));
         }
         return { fields, params };
     }
@@ -209,14 +200,14 @@ class Executor {
         }
         const { ignore = false, upsert = false } = opt;
         const { fields: insertFields, params } = this.prepareFields(data);
-        let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${(0, index_js_3.quote)(this.table)} (${insertFields.join(', ')}) VALUES (${params.map(() => '?').join(', ')})`;
+        let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${(0, index_js_2.quote)(this.table)} (${insertFields.join(', ')}) VALUES (${params.map(() => '?').join(', ')})`;
         // 处理 UPSERT 逻辑
         if (upsert) {
             const updateFields = Array.isArray(upsert)
                 ? upsert
                 : Object.keys(data).filter(k => this.schema.fieldsMap.has(k));
             const updateSql = updateFields
-                .map(f => `${(0, index_js_3.quote)(f)} = VALUES(${(0, index_js_3.quote)(f)})`)
+                .map(f => `${(0, index_js_2.quote)(f)} = VALUES(${(0, index_js_2.quote)(f)})`)
                 .join(', ');
             sql += ` ON DUPLICATE KEY UPDATE ${updateSql}`;
         }
@@ -240,7 +231,7 @@ class Executor {
             batch.push(data);
         }
         const columns = Object.keys(data[0]);
-        const quotedColumns = columns.filter(c => this.schema.fieldsMap.has(c)).map(c => (0, index_js_3.quote)(c)).join(', ');
+        const quotedColumns = columns.filter(c => this.schema.fieldsMap.has(c)).map(c => (0, index_js_2.quote)(c)).join(', ');
         const results = {
             fieldCount: 0,
             affectedRows: 0,
@@ -257,14 +248,14 @@ class Executor {
                 // 2. 重复占位符，生成 "(?, ?), (?, ?), (?, ?)"
                 const valuesSql = batchData.map(() => placeholders).join(', ');
                 // 3. 展平所有数据为一个一维数组 [val1, val2, val3, val4...]
-                const params = batchData.flatMap(item => columns.map(col => item[col]));
-                let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${(0, index_js_3.quote)(this.table)} (${quotedColumns}) VALUES ${valuesSql}`;
+                const params = batchData.flatMap(item => columns.map(col => (0, index_js_2.normalizeSqlValue)(item[col])));
+                let sql = `INSERT ${ignore ? 'IGNORE' : ''} INTO ${(0, index_js_2.quote)(this.table)} (${quotedColumns}) VALUES ${valuesSql}`;
                 if (upsert) {
                     const updateFields = Array.isArray(upsert)
                         ? upsert
                         : Object.keys(data).filter(k => this.schema.fieldsMap.has(k));
                     const updateSql = updateFields
-                        .map(f => `${(0, index_js_3.quote)(f)} = VALUES(${(0, index_js_3.quote)(f)})`)
+                        .map(f => `${(0, index_js_2.quote)(f)} = VALUES(${(0, index_js_2.quote)(f)})`)
                         .join(', ');
                     sql += ` ON DUPLICATE KEY UPDATE ${updateSql}`;
                 }
@@ -303,7 +294,7 @@ class Executor {
         const { sql: whereSql, params: whereParams } = (0, index_js_1.parseQuery)(query);
         const { sql: assignments, params: values } = (0, index_js_1.parseUpdate)(data, this.schema);
         const finalSql = `
-            UPDATE ${(0, index_js_3.quote)(this.table)}
+            UPDATE ${(0, index_js_2.quote)(this.table)}
             SET ${assignments} 
             WHERE ${whereSql} LIMIT 1
         `;
@@ -322,7 +313,7 @@ class Executor {
         const { sql: whereSql, params: whereParams } = (0, index_js_1.parseQuery)(query);
         const { sql: assignments, params: values } = (0, index_js_1.parseUpdate)(data, this.schema);
         const finalSql = `
-            UPDATE ${(0, index_js_3.quote)(this.table)}
+            UPDATE ${(0, index_js_2.quote)(this.table)}
             SET ${assignments} 
             WHERE ${whereSql}
         `;
@@ -337,7 +328,7 @@ class Executor {
             query = await this.schema.hooks.beforeDelete(query) || query;
         }
         const { sql: whereSql, params: whereParams } = (0, index_js_1.parseQuery)(query);
-        const finalSql = `DELETE FROM ${(0, index_js_3.quote)(this.table)} WHERE ${whereSql} LIMIT 1`;
+        const finalSql = `DELETE FROM ${(0, index_js_2.quote)(this.table)} WHERE ${whereSql} LIMIT 1`;
         const result = await this.execute(finalSql, whereParams);
         if (typeof this.schema.hooks.afterDelete === "function") {
             return await this.schema.hooks.afterDelete(result);
@@ -349,7 +340,7 @@ class Executor {
             query = await this.schema.hooks.beforeDelete(query) || query;
         }
         const { sql: whereSql, params: whereParams } = (0, index_js_1.parseQuery)(query);
-        const finalSql = `DELETE FROM ${(0, index_js_3.quote)(this.table)} WHERE ${whereSql}`;
+        const finalSql = `DELETE FROM ${(0, index_js_2.quote)(this.table)} WHERE ${whereSql}`;
         const result = await this.execute(finalSql, whereParams);
         if (typeof this.schema.hooks.afterDelete === "function") {
             return await this.schema.hooks.afterDelete(result);
@@ -357,7 +348,7 @@ class Executor {
         return result;
     }
     async clear() {
-        const finalSql = `DELETE FROM ${(0, index_js_3.quote)(this.table)}`;
+        const finalSql = `DELETE FROM ${(0, index_js_2.quote)(this.table)}`;
         const result = await this.execute(finalSql, []);
         return result;
     }

@@ -121,12 +121,12 @@ export function buildFields(fields: Fields | "*" = "*"): { fields: string, param
 
                     } else if (obj.type === "jsonObject") {
                         obj.fields = [
-                            `JSON_OBJECT(${obj.fields?.map((f:any) => `'${f}', ${f}`).join(', ')})`
+                            `JSON_OBJECT(${obj.fields?.map((f: any) => `'${f}', ${f}`).join(', ')})`
                         ];
 
                     } else if (obj.type === "jsonArray") {
                         obj.fields = [
-                            `JSON_ARRAYAGG(JSON_OBJECT(${obj.fields?.map((f:any) => `'${f}', ${f}`).join(', ')}))`
+                            `JSON_ARRAYAGG(JSON_OBJECT(${obj.fields?.map((f: any) => `'${f}', ${f}`).join(', ')}))`
                         ];
                     }
 
@@ -157,4 +157,15 @@ export function buildFields(fields: Fields | "*" = "*"): { fields: string, param
         return { fields: fieldList, params };
     }
     return { fields, params: [] }; // 如果是字符串且不是 *，建议也处理下或者直接透传
+}
+
+
+export function normalizeSqlValue(value: any) {
+    if (typeof value === "object" && value != null) {
+        return JSON.stringify(value);
+    }
+    else {
+        if (value === undefined || value === "") return null;
+        else return value;
+    }
 }
