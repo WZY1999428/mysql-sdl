@@ -1,4 +1,5 @@
 import { isObject, quote } from "../utils/index.js";
+import parseQuery from "./parseQuery.js"
 import { JoinTypeMap, } from "./operators/aggregate.js";
 import type { Join } from "./operators/aggregate.js"
 
@@ -83,13 +84,21 @@ function parseJoin(joins: Join[]): { joinSql: string; select: string, params: an
             }).join(" AND ");
         }
 
+        let whereStr = "";
+
+        if (item.query) {
+            const { sql: querySql, params: queryParams } = parseQuery(item.query);
+            params.push(...queryParams);
+            whereStr = ` WHERE ${querySql}`;
+        }
+
         const joinOn = onStr ? ` ON ${onStr}` : "";
         // 3. 根据类型生成 SQL
         if (item.type === 'self') {
-            return { sql: ` INNER JOIN ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}`, select };
+            return { sql: ` INNER JOIN ${quote(item.table)} AS ${quote(tableAlias)}${joinOn} ${whereStr}`, select };
         } else {
             const joinType = JoinTypeMap[item.type || 'inner']; // 默认 inner
-            return { sql: ` ${joinType} ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}`, select };
+            return { sql: ` ${joinType} ${quote(item.table)} AS ${quote(tableAlias)}${joinOn}  ${whereStr}`, select };
         }
 
     });
@@ -145,7 +154,7 @@ function parseJoinSelect(joinItem: Join): string[] {
                 return `IF(COUNT(${quote(firstField)}) = 0, JSON_ARRAY(), JSON_ARRAYAGG(JSON_OBJECT(${jsonObjectArgs}))) AS ${quote(item.as)}`;
             }
         }
-        
+
         // 2. 如果是 非对象数组内容
         if (item.type === "array") {
 

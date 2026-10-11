@@ -4,7 +4,8 @@ import type { Connection, ConnectionOptions, PoolConnection, PoolOptions, QueryR
 type Result = QueryResult | ResultSetHeader;
 export type newConnection = Connection | PoolConnection
 type Options = PoolOptions & {
-    release?: boolean
+    release?: boolean,
+    createDatabase?: boolean
 }
 class Client {
     private conn: Connection | null = null;
@@ -26,25 +27,26 @@ class Client {
         const { database, ...connectionConfig } = options;
         const conn = await mysql.createConnection(connectionConfig);
         if (database) {
-            await this.createDataBase(database, conn);
+            await Client.createDataBase(database, conn);
         }
         return new Client(conn);
     }
 
     public static async connectionPool(options: Options): Promise<Client> {
-        // const { database, ...connectionConfig } = options;
-        const database = options.database;
-        const pool = mysql.createPool(options);
-        if (database) {
-            const conn = await pool.getConnection();
+        const { database, createDatabase = false, ...initConfig } = options;
+        const initPool = mysql.createPool(initConfig);
+        if (database && createDatabase) {
+            const conn = await initPool.getConnection();
             await (conn as any).query(`CREATE DATABASE IF NOT EXISTS \`${database}\` CHARACTER SET utf8mb4;`);
             conn.release();
+            await initPool.end();
         }
         const instance = new Client();
         instance.isPool = true
-        instance.dbPoll = pool
-        instance.release = options.release || true;
         instance.database = database || '';
+        const { createDatabase: _, ...poolConfig } = options;
+        instance.dbPoll = mysql.createPool(poolConfig);
+        instance.release = options.release || true;
         return instance!
     }
 

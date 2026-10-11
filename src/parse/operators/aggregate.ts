@@ -89,6 +89,7 @@ interface NormalJoin {
     on: Record<string, string>; // 必填
     type?: JoinType;
     as?: string;
+    query: Query<unknown>,
     /** 连表需要额外生成的映射字段/聚合字段（支持配置多个） */
     select?: JoinSelectOption[];
 }
@@ -99,6 +100,7 @@ interface SelfJoin {
     on?: Record<string, string>; // 可选
     type: 'self'; // 必须显式指定为 'self'
     as: string;   // 自连接必须有别名，否则字段全冲突
+    query: Query<unknown>,
     /** 连表需要额外生成的映射字段/聚合字段（支持配置多个） */
     select?: JoinSelectOption[];
 }
