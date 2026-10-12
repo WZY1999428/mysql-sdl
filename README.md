@@ -7,6 +7,8 @@
 
 ## 📖 项目简介
 
+> ⚠️ **注意**：功能还在开发中，功能可能不完善，使用时请谨慎。
+
 **MySQL DSL** 是一个专为 TypeScript / Node.js 开发者打造的声明式 SQL 查询构建工具，**原生基于 `mysql2` 驱动开发**。
 
 它的设计初衷是将 **MongoDB 简单直观的 JSON 查询 API** 引入到 **MySQL 关系型数据库** 中。你不再需要手动拼接复杂的 `LEFT JOIN`、`GROUP BY` 或 `JSON_ARRAYAGG`，只需传入结构化的 JSON 对象，即可自动生成防注入的 SQL 并通过 `mysql2` 执行。
