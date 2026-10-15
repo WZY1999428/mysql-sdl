@@ -16,8 +16,10 @@ class Executor<T> {
         private client: Client,
         private table: string,
         private schema: Schema<T>,
-        private conn?: newConnection,
-    ) { }
+        public conn?: newConnection,
+    ) {
+
+    }
 
 
 

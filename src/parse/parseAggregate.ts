@@ -85,7 +85,7 @@ export default function parseAggregate<T>(table: string, options: AggregationOpt
     }
 
 
-    if (sort && sort.length) {
+    if (sort) {
         sqlStr += ` ${parseOrder(sort)}`;
 
     }

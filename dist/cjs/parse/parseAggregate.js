@@ -67,7 +67,7 @@ function parseAggregate(table, options) {
         sqlStr += ` HAVING ${sqlQuery}`;
         params.push(...paramsQuery);
     }
-    if (sort && sort.length) {
+    if (sort) {
         sqlStr += ` ${(0, parseOrder_js_1.default)(sort)}`;
     }
     if (isFinite(limit)) {

@@ -193,8 +193,8 @@ class Schema {
         this._tableFields = [];
         for (const k in fields) {
             const field = fields[k];
-            this._tableFields.push(this.qualifyField(k));
             this.fieldsMap.set(k, field.type);
+            this._tableFields.push(this.qualifyField(k));
         }
         this.hooks = hooks || {};
     }

@@ -1,11 +1,12 @@
 import Cleint from "../client.js";
 import Executor from "./executor.js";
 import { Schema } from "../schema/index.js";
+import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Query } from "../parse/operators/index.js"
 import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, AggregationOptions, MathOptions } from "./options.js"
 import { ResultSetHeader } from "mysql2"
-
-
+import type { newConnection } from "../client.js";
+export const transactionContext = new AsyncLocalStorage<newConnection>();
 class Model<T> {
     ready: Promise<void>
     static debug: boolean = false
@@ -119,6 +120,18 @@ class Model<T> {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     async checkout(): Promise<Executor<T>> {
+        const transactionConn = transactionContext.getStore();
+        if (transactionConn) {
+            console.log(transactionConn);
+            // 绑定当前事务连接，不拥有该连接
+            return new Executor(
+                this.client,
+                this.table,
+                this.schema,
+                transactionConn,
+            );
+        }
+
         const conn = await this.client.getConnection();
         if (!conn) throw new Error("[ODM] Failed to get database connection");
         // 这里的第四个参数 release 传 false，表示 executor 执行方法后不自动释放
@@ -137,7 +150,10 @@ class Model<T> {
         try {
             await execute.beginTransaction();
             startd = true;
-            const result = await callback(execute);
+            const result = await transactionContext.run(
+                execute.conn!!,
+                () => callback(execute)
+            );
             await execute.commit();
             return result;
         } catch (error) {

@@ -20,7 +20,6 @@ declare class Client {
     destroy(): Promise<void>;
     execute(sql: string, params?: any[]): Promise<Result>;
     withConnExecute(conn: newConnection, sql: string, params?: any[]): Promise<Result>;
-    beginTransaction(callback: (conn: newConnection) => Promise<void>): Promise<void>;
 }
 export default Client;
 //# sourceMappingURL=client.d.ts.map

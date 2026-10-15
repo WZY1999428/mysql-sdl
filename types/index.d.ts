@@ -4,7 +4,7 @@ import { Schema } from "./schema/index.js";
 import Model from "./model/index.js";
 declare class MySqlODM {
     models: Map<string, Model<any>>;
-    conn: Client | null;
+    client: Client | null;
     debug: boolean;
     constructor(options?: {
         debug?: boolean;

@@ -83,7 +83,6 @@ class Client {
         }
     }
 
-
     async withConnExecute(conn: newConnection, sql: string, params: any[] = []): Promise<Result> {
         try {
             if (!conn) throw new Error("No Connection");
@@ -92,24 +91,6 @@ class Client {
         } catch (err) {
             console.error("SQL执行失败:", sql, err);
             throw err;
-        }
-    }
-
-    async beginTransaction(callback: (conn: newConnection) => Promise<void>) {
-        let started = false;
-        const conn = await this.getConnection();
-        try {
-            await conn!.beginTransaction();
-            started = true
-            await callback(conn!);
-            await conn!.commit();
-        } catch (error) {
-            if (started) await conn!.rollback();
-            throw error
-        } finally {
-            if (this.isPool && conn && (conn as PoolConnection).release) {
-                (conn as PoolConnection).release();
-            }
         }
     }
 }

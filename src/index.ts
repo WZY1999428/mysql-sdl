@@ -5,7 +5,7 @@ import Model from "./model/index.js";
 
 class MySqlODM {
     models: Map<string, Model<any>>
-    conn: Client | null = null;
+    client: Client | null = null;
     debug: boolean = false;
 
     constructor(options?: {
@@ -17,19 +17,19 @@ class MySqlODM {
     }
 
     async use(options: ConnectionOptions, type: 'connection' | 'pool' = 'pool') {
-        this.conn = type === 'connection'
+        this.client = type === 'connection'
             ? await Client.connection(options)
             : await Client.connectionPool(options);
     }
 
     async model<T>(table: string, schema?: Schema<T>): Promise<Model<T>> {
-        if (!this.conn) throw new Error("Database not connected");
+        if (!this.client) throw new Error("Database not connected");
         if (this.models.has(table)) return this.models.get(table) as Model<T>;
         if (!(schema instanceof Schema)) {
             throw new Error("schema must be an instance of Schema");
         }
         schema.table = table;
-        const model = new Model<T>(table, schema, this.conn!);
+        const model = new Model<T>(table, schema, this.client!);
         await model.execute(`SHOW COLUMNS FROM ${table}`, []).then(async fields => {
             const notFields = [];
             for (const key in schema.fields) {

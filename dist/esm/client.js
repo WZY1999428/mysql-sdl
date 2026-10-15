@@ -86,25 +86,5 @@ class Client {
             throw err;
         }
     }
-    async beginTransaction(callback) {
-        let started = false;
-        const conn = await this.getConnection();
-        try {
-            await conn.beginTransaction();
-            started = true;
-            await callback(conn);
-            await conn.commit();
-        }
-        catch (error) {
-            if (started)
-                await conn.rollback();
-            throw error;
-        }
-        finally {
-            if (this.isPool && conn && conn.release) {
-                conn.release();
-            }
-        }
-    }
 }
 export default Client;

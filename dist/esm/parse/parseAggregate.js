@@ -60,7 +60,7 @@ export default function parseAggregate(table, options) {
         sqlStr += ` HAVING ${sqlQuery}`;
         params.push(...paramsQuery);
     }
-    if (sort && sort.length) {
+    if (sort) {
         sqlStr += ` ${parseOrder(sort)}`;
     }
     if (isFinite(limit)) {

@@ -8,7 +8,7 @@ const index_js_1 = require("./schema/index.js");
 const index_js_2 = __importDefault(require("./model/index.js"));
 class MySqlODM {
     models;
-    conn = null;
+    client = null;
     debug = false;
     constructor(options) {
         this.models = new Map();
@@ -16,12 +16,12 @@ class MySqlODM {
         console.log("Database connected");
     }
     async use(options, type = 'pool') {
-        this.conn = type === 'connection'
+        this.client = type === 'connection'
             ? await client_js_1.default.connection(options)
             : await client_js_1.default.connectionPool(options);
     }
     async model(table, schema) {
-        if (!this.conn)
+        if (!this.client)
             throw new Error("Database not connected");
         if (this.models.has(table))
             return this.models.get(table);
@@ -29,7 +29,7 @@ class MySqlODM {
             throw new Error("schema must be an instance of Schema");
         }
         schema.table = table;
-        const model = new index_js_2.default(table, schema, this.conn);
+        const model = new index_js_2.default(table, schema, this.client);
         await model.execute(`SHOW COLUMNS FROM ${table}`, []).then(async (fields) => {
             const notFields = [];
             for (const key in schema.fields) {

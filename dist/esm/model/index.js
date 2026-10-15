@@ -1,4 +1,6 @@
 import Executor from "./executor.js";
+import { AsyncLocalStorage } from 'node:async_hooks';
+export const transactionContext = new AsyncLocalStorage();
 class Model {
     table;
     schema;
@@ -91,6 +93,12 @@ class Model {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     async checkout() {
+        const transactionConn = transactionContext.getStore();
+        if (transactionConn) {
+            console.log(transactionConn);
+            // 绑定当前事务连接，不拥有该连接
+            return new Executor(this.client, this.table, this.schema, transactionConn);
+        }
         const conn = await this.client.getConnection();
         if (!conn)
             throw new Error("[ODM] Failed to get database connection");
@@ -108,7 +116,7 @@ class Model {
         try {
             await execute.beginTransaction();
             startd = true;
-            const result = await callback(execute);
+            const result = await transactionContext.run(execute.conn, () => callback(execute));
             await execute.commit();
             return result;
         }

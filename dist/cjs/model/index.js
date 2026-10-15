@@ -3,7 +3,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.transactionContext = void 0;
 const executor_js_1 = __importDefault(require("./executor.js"));
+const node_async_hooks_1 = require("node:async_hooks");
+exports.transactionContext = new node_async_hooks_1.AsyncLocalStorage();
 class Model {
     table;
     schema;
@@ -96,6 +99,12 @@ class Model {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     async checkout() {
+        const transactionConn = exports.transactionContext.getStore();
+        if (transactionConn) {
+            console.log(transactionConn);
+            // 绑定当前事务连接，不拥有该连接
+            return new executor_js_1.default(this.client, this.table, this.schema, transactionConn);
+        }
         const conn = await this.client.getConnection();
         if (!conn)
             throw new Error("[ODM] Failed to get database connection");
@@ -113,7 +122,7 @@ class Model {
         try {
             await execute.beginTransaction();
             startd = true;
-            const result = await callback(execute);
+            const result = await exports.transactionContext.run(execute.conn, () => callback(execute));
             await execute.commit();
             return result;
         }

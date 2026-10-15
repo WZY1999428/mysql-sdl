@@ -2,14 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = parseOrder;
 const ORDER_MAP = { 'asc': 'ASC', 'desc': 'DESC' };
-const index_js_1 = require("../utils/index.js");
 function parseOrder(order) {
     const orderSql = [];
     for (const k in order) {
         const dir = order[k];
         if (dir == null)
             continue;
-        orderSql.push(`${(0, index_js_1.parseJson)(k)} ${ORDER_MAP[dir]}`);
+        orderSql.push(`${k} ${ORDER_MAP[dir]}`);
     }
     if (orderSql.length === 0)
         return '';

@@ -25,7 +25,13 @@ type QueryLogical<T> = {
 type QuerySpecial = {
     $select?: Select;
     $exists?: Select;
+    $count?: Select;
+    $sum?: Select;
+    $avg?: Select;
+    $max?: Select;
+    $min?: Select;
 };
+
 
 export type Query<T = any> =
     QueryFields<T>
