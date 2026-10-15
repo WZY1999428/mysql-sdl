@@ -189,7 +189,6 @@ export class Schema {
         this.tableFields = [];
         for (const k in fields) {
             const field = fields[k];
-            this.tableFields.push(k);
             this.fieldsMap.set(k, field.type);
         }
         this.hooks = hooks || {};
@@ -219,8 +218,10 @@ export class Schema {
             throw new Error(`fieldNames must be an array`);
         if (fieldNames)
             return fieldNames.map(name => this.qualifyField(name));
-        else
-            return this.tableFields.map(name => this.qualifyField(name));
+        if (!this.tableFields.length) {
+            this.tableFields = Array.from(this.fieldsMap.keys()).map(name => this.qualifyField(name));
+        }
+        return [...this.tableFields];
     }
     toTableDefinition() {
         if (this.fieldsMap.size === 0) {
