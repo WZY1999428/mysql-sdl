@@ -179,14 +179,17 @@ function sanitizeConstraints(opt = {}) {
 }
 export class Schema {
     fields;
+    _tableFields = [];
     fieldsMap;
     hooks;
     table;
     constructor(fields, hooks) {
         this.fields = fields;
         this.fieldsMap = new Map();
+        this._tableFields = [];
         for (const k in fields) {
             const field = fields[k];
+            this._tableFields.push(this.qualifyField(k));
             this.fieldsMap.set(k, field.type);
         }
         this.hooks = hooks || {};
@@ -212,9 +215,12 @@ export class Schema {
      * @throws {Error} 当传入的参数不是数组，或包含不存在的字段名时抛出异常
      */
     qualifyFields(fieldNames) {
-        if (!Array.isArray(fieldNames))
+        if (fieldNames && !Array.isArray(fieldNames))
             throw new Error(`fieldNames must be an array`);
-        return fieldNames.map(name => this.qualifyField(name));
+        if (fieldNames)
+            return fieldNames.map(name => this.qualifyField(name));
+        else
+            return [...this._tableFields];
     }
     toTableDefinition() {
         if (this.fieldsMap.size === 0) {

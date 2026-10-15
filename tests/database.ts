@@ -34,8 +34,6 @@ await odm.use({
 }, "connection")
 
 
-
-
 export const userModel = await odm.model<User>("system_user", new Schema<User>({
     id: { type: DataType.BigInt, primaryKey: true, autoIncrement: { start: 10000, enabled: true } },
     avatar: { type: DataType.VarChar, length: 255, nullable: true },

@@ -42,14 +42,21 @@ function parse(query, params) {
             }
             if (key == "$and" || key == "$or") {
                 const arr = value.map((v) => parse(v, params));
-                segments.push(`(${arr.join(` ${index_js_2.LogicalMap[key]} `)})`);
+                if (arr.length) {
+                    segments.push(`(${arr.join(` ${index_js_2.LogicalMap[key]} `)})`);
+                }
             }
             else if (key === '$not') {
-                segments.push(`NOT (${value.map((v) => parse(v, params)).join(' AND ')})`);
+                const arr = value.map((v) => parse(v, params));
+                if (arr.length) {
+                    segments.push(`NOT (${arr.join(' AND ')})`);
+                }
             }
             else if (key === '$nor') {
                 const arr = value.map((v) => parse(v, params));
-                segments.push(`NOT (${arr.join(' OR ')})`);
+                if (arr.length) {
+                    segments.push(`NOT (${arr.join(' OR ')})`);
+                }
             }
             continue;
         }

@@ -19,7 +19,7 @@ declare class Model<T> {
     deleteMany(query?: Query<T>): Promise<ResultSetHeader>;
     insertOne(data: T, opt?: InsertOptions): Promise<import("mysql2").QueryResult>;
     insertMany(data: T[], opt?: insertManyOptions): Promise<ResultSetHeader>;
-    updateOne(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader>;
+    updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader>;
     updateMany(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader>;
     aggregate(options: AggregationOptions<T>): Promise<unknown[]>;
     count<T>(options: MathOptions<T>): Promise<number>;

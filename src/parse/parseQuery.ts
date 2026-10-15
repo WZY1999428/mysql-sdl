@@ -46,23 +46,22 @@ function parse<T>(query: Query<T>, params: any[]) {
             if (!value.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
                 throwError(`Invalid item in "${key}": Each element must be a non-null plain object.`);
             }
-
-
             if (key == "$and" || key == "$or") {
-
                 const arr = value.map((v) => parse(v, params));
-
-                segments.push(`(${arr.join(` ${LogicalMap[key as Logical]} `)})`);
-
+                if(arr.length) {
+                    segments.push(`(${arr.join(` ${LogicalMap[key as Logical]} `)})`);
+                }
             } else if (key === '$not') {
-
-                segments.push(`NOT (${value.map((v) => parse(v, params)).join(' AND ')})`);
+                const arr = value.map((v) => parse(v, params));
+                if(arr.length) {
+                    segments.push(`NOT (${arr.join(' AND ')})`);
+                }
 
             } else if (key === '$nor') {
-
                 const arr = value.map((v) => parse(v, params));
-
-                segments.push(`NOT (${arr.join(' OR ')})`);
+                if(arr.length) {
+                    segments.push(`NOT (${arr.join(' OR ')})`);
+                }
 
             }
             continue;

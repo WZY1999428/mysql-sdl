@@ -286,14 +286,17 @@ type SchemaHooks<T, P = any> = {
 
 export class Schema<T> {
     fields: FieldsMap<T>;
+    private _tableFields: string[] = [];
     fieldsMap: Map<string, DataType>
     hooks: SchemaHooks<T>;
     table?: string
     constructor(fields: FieldsMap<T>, hooks?: SchemaHooks<T>) {
         this.fields = fields
         this.fieldsMap = new Map()
+        this._tableFields = [];
         for (const k in fields) {
             const field = fields[k];
+            this._tableFields.push(this.qualifyField(k))
             this.fieldsMap.set(k, field.type)
         }
         this.hooks = hooks || {};
@@ -321,9 +324,10 @@ export class Schema<T> {
      * @returns 拼接表名后的限定字段名数组（格式：`['table.field1', 'table.field2']`）
      * @throws {Error} 当传入的参数不是数组，或包含不存在的字段名时抛出异常
      */
-    qualifyFields(fieldNames: string[]): string[] {
-        if (!Array.isArray(fieldNames)) throw new Error(`fieldNames must be an array`);
-        return fieldNames.map(name => this.qualifyField(name));
+    qualifyFields(fieldNames?: string[]): string[] {
+        if (fieldNames && !Array.isArray(fieldNames)) throw new Error(`fieldNames must be an array`);
+        if (fieldNames) return fieldNames.map(name => this.qualifyField(name));
+        else return [...this._tableFields];
     }
 
     toTableDefinition(): { definition: string, alterTable?: string | undefined } {

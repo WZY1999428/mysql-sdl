@@ -69,7 +69,7 @@ class Model<T> {
         return execute.insertMany(data, opt);
     }
 
-    updateOne(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader> {
+    updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader> {
         return this.buildExecutor().updateOne(query, data);
     }
 
@@ -168,7 +168,7 @@ class Model<T> {
     qualifyField(fieldName: string): string {
         return this.schema.qualifyField(fieldName);
     }
-    qualifyFields(fieldNames: string[]): string[] {
+    qualifyFields(fieldNames?: string[]): string[] {
         return this.schema.qualifyFields(fieldNames);
     }
 }
