@@ -1,6 +1,6 @@
 import Executor from "./executor.js";
 import { AsyncLocalStorage } from 'node:async_hooks';
-export const transactionContext = new AsyncLocalStorage();
+const transactionContext = new AsyncLocalStorage();
 class Model {
     table;
     schema;
@@ -95,7 +95,6 @@ class Model {
     async checkout() {
         const transactionConn = transactionContext.getStore();
         if (transactionConn) {
-            console.log(transactionConn);
             // 绑定当前事务连接，不拥有该连接
             return new Executor(this.client, this.table, this.schema, transactionConn);
         }

@@ -67,7 +67,7 @@ type SchemaHooks<T, P = any> = {
 };
 export declare class Schema<T> {
     fields: FieldsMap<T>;
-    private _tableFields;
+    private tableFields;
     fieldsMap: Map<string, DataType>;
     hooks: SchemaHooks<T>;
     table?: string;

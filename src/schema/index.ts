@@ -286,18 +286,18 @@ type SchemaHooks<T, P = any> = {
 
 export class Schema<T> {
     fields: FieldsMap<T>;
-    private _tableFields: string[] = [];
+    private tableFields: string[] = [];
     fieldsMap: Map<string, DataType>
     hooks: SchemaHooks<T>;
     table?: string
     constructor(fields: FieldsMap<T>, hooks?: SchemaHooks<T>) {
         this.fields = fields
         this.fieldsMap = new Map()
-        this._tableFields = [];
+        this.tableFields = [];
         for (const k in fields) {
             const field = fields[k];
+            this.tableFields.push(k)
             this.fieldsMap.set(k, field.type)
-            this._tableFields.push(this.qualifyField(k))
         }
         this.hooks = hooks || {};
     }
@@ -327,7 +327,7 @@ export class Schema<T> {
     qualifyFields(fieldNames?: string[]): string[] {
         if (fieldNames && !Array.isArray(fieldNames)) throw new Error(`fieldNames must be an array`);
         if (fieldNames) return fieldNames.map(name => this.qualifyField(name));
-        else return [...this._tableFields];
+        else return this.tableFields.map(name => this.qualifyField(name));
     }
 
     toTableDefinition(): { definition: string, alterTable?: string | undefined } {

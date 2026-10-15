@@ -6,7 +6,7 @@ import type { Query } from "../parse/operators/index.js"
 import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, AggregationOptions, MathOptions } from "./options.js"
 import { ResultSetHeader } from "mysql2"
 import type { newConnection } from "../client.js";
-export const transactionContext = new AsyncLocalStorage<newConnection>();
+const transactionContext = new AsyncLocalStorage<newConnection>();
 class Model<T> {
     ready: Promise<void>
     static debug: boolean = false
@@ -122,7 +122,6 @@ class Model<T> {
     async checkout(): Promise<Executor<T>> {
         const transactionConn = transactionContext.getStore();
         if (transactionConn) {
-            console.log(transactionConn);
             // 绑定当前事务连接，不拥有该连接
             return new Executor(
                 this.client,

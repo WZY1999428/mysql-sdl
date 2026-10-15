@@ -54,30 +54,9 @@ class MySqlODM {
             }
         }).catch(err => { })
 
-
-
         this.models.set(table, model);
         return model
     }
-
-    private buildColumnSQL(name: string, field: any) {
-        let sql = `\`${name}\` ${field.type}`;
-
-        if (field.length) {
-            sql += `(${field.length})`;
-        }
-
-        if (field.nullable) {
-            sql += ` NOT NULL`;
-        }
-
-        if (field.autoIncrement) {
-            sql += ` AUTO_INCREMENT`;
-        }
-
-        return sql;
-    }
-
     getModels() {
         return this.models.keys();
     }

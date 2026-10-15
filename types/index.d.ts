@@ -11,7 +11,6 @@ declare class MySqlODM {
     });
     use(options: ConnectionOptions, type?: 'connection' | 'pool'): Promise<void>;
     model<T>(table: string, schema?: Schema<T>): Promise<Model<T>>;
-    private buildColumnSQL;
     getModels(): MapIterator<string>;
 }
 export default MySqlODM;

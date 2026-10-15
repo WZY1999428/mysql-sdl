@@ -179,18 +179,18 @@ function sanitizeConstraints(opt = {}) {
 }
 export class Schema {
     fields;
-    _tableFields = [];
+    tableFields = [];
     fieldsMap;
     hooks;
     table;
     constructor(fields, hooks) {
         this.fields = fields;
         this.fieldsMap = new Map();
-        this._tableFields = [];
+        this.tableFields = [];
         for (const k in fields) {
             const field = fields[k];
+            this.tableFields.push(k);
             this.fieldsMap.set(k, field.type);
-            this._tableFields.push(this.qualifyField(k));
         }
         this.hooks = hooks || {};
     }
@@ -220,7 +220,7 @@ export class Schema {
         if (fieldNames)
             return fieldNames.map(name => this.qualifyField(name));
         else
-            return [...this._tableFields];
+            return this.tableFields.map(name => this.qualifyField(name));
     }
     toTableDefinition() {
         if (this.fieldsMap.size === 0) {

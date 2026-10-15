@@ -1,12 +1,9 @@
 import Cleint from "../client.js";
 import Executor from "./executor.js";
 import { Schema } from "../schema/index.js";
-import { AsyncLocalStorage } from 'node:async_hooks';
 import type { Query } from "../parse/operators/index.js";
 import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, AggregationOptions, MathOptions } from "./options.js";
 import { ResultSetHeader } from "mysql2";
-import type { newConnection } from "../client.js";
-export declare const transactionContext: AsyncLocalStorage<newConnection>;
 declare class Model<T> {
     table: string;
     schema: Schema<T>;
