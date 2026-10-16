@@ -79,7 +79,7 @@ class Executor {
         let joinSql = `SELECT ${bFields} FROM ${quote(this.table)}`;
         if (sql)
             joinSql += ` WHERE ${sql} `;
-        joinSql += ` ${parseOrder(sort)} LIMIT 1`;
+        joinSql += ` ${parseOrder(sort, params)} LIMIT 1`;
         const result = await this.execute(joinSql, params);
         if (typeof this.schema.hooks.afterFind === "function") {
             return await this.schema.hooks.afterFind(result[0]);
@@ -168,7 +168,7 @@ class Executor {
         let joinSql = `SELECT ${bFields} FROM ${quote(this.table)}`;
         if (sql)
             joinSql += ` WHERE ${sql} `;
-        joinSql += ` ${parseOrder(sort)} ${this.buildLimit(limit, offset)} `;
+        joinSql += ` ${parseOrder(sort, params)} ${this.buildLimit(limit, offset)} `;
         const results = await this.execute(joinSql, params);
         if (typeof this.schema.hooks.afterFind === "function") {
             return this.schema.hooks.afterFind(results);

@@ -24,7 +24,6 @@ function parseJoin(joins) {
     if (!Array.isArray(joins)) {
         throw new Error("joins must be array");
     }
-    let asIndex = 0;
     const params = [];
     const joinsList = joins.map(item => {
         let select = [];
@@ -38,7 +37,7 @@ function parseJoin(joins) {
             throw new Error("on is required");
         }
         // 1. 生成别名：优先用用户的，没有就自增
-        const tableAlias = item.as || `t${asIndex++}`;
+        const tableAlias = item.as || item.table;
         if (item.select && Array.isArray(item.select)) {
             select = parseJoinSelect(item);
         }

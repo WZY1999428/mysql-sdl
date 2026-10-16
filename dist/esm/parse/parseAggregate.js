@@ -61,7 +61,7 @@ export default function parseAggregate(table, options) {
         params.push(...paramsQuery);
     }
     if (sort) {
-        sqlStr += ` ${parseOrder(sort)}`;
+        sqlStr += ` ${parseOrder(sort, params)}`;
     }
     if (isFinite(limit)) {
         sqlStr += ` LIMIT ${limit}`;

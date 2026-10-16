@@ -1,6 +1,7 @@
 import { isObject, quote, throwError } from "../utils/index.js";
 import { LogicalMap, QueryOperatorMap } from "./operators/index.js";
 import type { Select } from "./operators/conditional.js";
+import { SelectMode } from "./operators/conditional.js";
 import parseJoin from "../parse/parseJoin.js"
 import parseCase from "../parse/parseCase.js"
 
@@ -89,6 +90,12 @@ function parse<T>(query: Query<T>, params: any[]) {
             }
             continue;
         }
+
+        if (key === "$exists") {
+            segments.push(` EXISTS (${parseSelect("", value as Select, params, SelectMode.exists)}) `);
+            continue;
+        }
+
         buildWhereClause(value, key, segments, params);
 
     }
@@ -112,12 +119,15 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
 
             const val = (value as Record<string, any>)[op as string];
 
-            console.log("opopopopopopopopop", op);
-
             if (op === "$select") {
 
                 segments.push(`${quote(key as string)} = (${parseSelect(key as string, val as Select, params)}) `);
 
+                break;
+            }
+
+            if (op === "$exists") {
+                segments.push(` ${quote(key as string)} = EXISTS (${parseSelect(key as string, value as Select, params, SelectMode.exists)}) `);
                 break;
             }
 
@@ -136,7 +146,7 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                 }
                 continue;
             }
-            
+
             if (op === "$exists") {
                 segments.push(`${quote(key as string)} = EXISTS (${parseSelect(key as string, val as Select, params)})`);
                 continue;
@@ -218,22 +228,19 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
 
 
 
-export function parseSelect(key: string, val: Select, params: any[]) {
+export function parseSelect(key: string, val: Select, params: any[], selectMode: SelectMode = SelectMode.select) {
     if (typeof val !== "object") {
-        throwError(`"$select" operator at "${key}" requires an object.`);
+        throwError(`"${selectMode}" operator at "${key}" requires an object.`);
     }
 
     if (!val.table || typeof val.table !== "string") {
-        throwError(`"$select" operator at "${key}" requires a "table" property.`);
+        throwError(`"${selectMode}" operator at "${key}" requires a "table" property.`);
     }
 
     if (val.fields && !Array.isArray(val.fields)) {
-        throwError(`"$select" operator at "${key}" requires a "fields" property as an array.`);
+        throwError(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
     }
 
-    if (!val.query || typeof val.query !== "object") {
-        throwError(`"$select" operator at "${key}" requires a "query" property as an object.`);
-    }
 
     let limitStr = '';
 
@@ -257,9 +264,16 @@ export function parseSelect(key: string, val: Select, params: any[]) {
     }
 
 
+    const fields = selectMode === SelectMode.exists ? "1" : val.fields?.map((f: string) => quote(f)).join(", ") || "*";
+
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
 
-    return ` SELECT ${select ? `${select}, ` : ``} ${val.fields?.map((f: string) => quote(f)).join(", ") || "*"} FROM ${quote(val.table)} ${joinSql}  WHERE ${parse(val.query, params)}${limitStr}  `;
+    let whereStr = "";
+    if (val.query) {
+        whereStr = ` WHERE ${parse(val.query, params)}`;
+    }
+
+    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

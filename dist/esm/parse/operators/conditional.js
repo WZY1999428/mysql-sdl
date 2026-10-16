@@ -1,3 +1,8 @@
+export var SelectMode;
+(function (SelectMode) {
+    SelectMode["select"] = "$select";
+    SelectMode["exists"] = "$exists";
+})(SelectMode || (SelectMode = {}));
 export const QueryOperatorMap = {
     '$eq': "=",
     '$ne': "!=",

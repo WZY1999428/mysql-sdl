@@ -7,6 +7,7 @@ exports.default = parseQuery;
 exports.parseSelect = parseSelect;
 const index_js_1 = require("../utils/index.js");
 const index_js_2 = require("./operators/index.js");
+const conditional_js_1 = require("./operators/conditional.js");
 const parseJoin_js_1 = __importDefault(require("../parse/parseJoin.js"));
 const parseCase_js_1 = __importDefault(require("../parse/parseCase.js"));
 const regex_js_1 = __importDefault(require("./operators/regex.js"));
@@ -76,6 +77,10 @@ function parse(query, params) {
             }
             continue;
         }
+        if (key === "$exists") {
+            segments.push(` EXISTS (${parseSelect("", value, params, conditional_js_1.SelectMode.exists)}) `);
+            continue;
+        }
         buildWhereClause(value, key, segments, params);
     }
     // 关键：在 join 前再次过滤，确保没有空隙
@@ -93,9 +98,12 @@ function buildWhereClause(value, key, segments, params) {
                 (0, index_js_1.throwError)(`Invalid operator "${op}" at "${key}"`);
             }
             const val = value[op];
-            console.log("opopopopopopopopop", op);
             if (op === "$select") {
                 segments.push(`${(0, index_js_1.quote)(key)} = (${parseSelect(key, val, params)}) `);
+                break;
+            }
+            if (op === "$exists") {
+                segments.push(` ${(0, index_js_1.quote)(key)} = EXISTS (${parseSelect(key, value, params, conditional_js_1.SelectMode.exists)}) `);
                 break;
             }
             if (op === "$case") {
@@ -178,18 +186,15 @@ function buildWhereClause(value, key, segments, params) {
         params.push(value);
     }
 }
-function parseSelect(key, val, params) {
+function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.select) {
     if (typeof val !== "object") {
-        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires an object.`);
+        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires an object.`);
     }
     if (!val.table || typeof val.table !== "string") {
-        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "table" property.`);
+        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "table" property.`);
     }
     if (val.fields && !Array.isArray(val.fields)) {
-        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "fields" property as an array.`);
-    }
-    if (!val.query || typeof val.query !== "object") {
-        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "query" property as an object.`);
+        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
     }
     let limitStr = '';
     if (val.limit !== undefined && val.limit !== null) {
@@ -206,8 +211,13 @@ function parseSelect(key, val, params) {
         joinSql = joinSqlStr;
         select = joinSelect;
     }
+    const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "*";
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
-    return ` SELECT ${select ? `${select}, ` : ``} ${val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "*"} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql}  WHERE ${parse(val.query, params)}${limitStr}  `;
+    let whereStr = "";
+    if (val.query) {
+        whereStr = ` WHERE ${parse(val.query, params)}`;
+    }
+    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

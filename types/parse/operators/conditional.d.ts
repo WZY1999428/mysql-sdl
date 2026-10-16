@@ -1,6 +1,10 @@
 import { Query } from "./index.js";
 import type { Join } from "./aggregate.js";
 export type SelectType = "raw" | "jsonObject" | "jsonArray" | "count";
+export declare enum SelectMode {
+    select = "$select",
+    exists = "$exists"
+}
 export declare const QueryOperatorMap: {
     readonly $eq: "=";
     readonly $ne: "!=";

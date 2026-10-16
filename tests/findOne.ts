@@ -78,90 +78,185 @@ const taks = [
     // 条件判断 CASE WHEN name = '周杰伦' THEN 1 ELSE 0 END
     // 字段子查询 
 
-    songModel.findOne({
-        user: {
-            $case: {
-                branches: [
-                    {
-                        when: {
-                            id: 1
-                        },
-                        then: "1"
-                    },
-                    {
-                        when: {
-                            id: { $in: [1, 3, 4, 5, 6] }
-                        },
-                        then: "2"
-                    },
-                    {
-                        when: {
-                            id: { $nin: [7, 8, 9, 10, 11, 12] }
-                        },
-                        then: "3"
-                    },
-                    {
-                        when: {
-                            title: { $like: "%周杰伦%" }
-                        },
-                        then: "4"
-                    },
-                    {
-                        when: {
-                            title: {
-                                $select: {
-                                    table: "music_artist",
-                                    fields: ["id"],
-                                    query: {
-                                        name: "周杰伦"
-                                    }
-                                }
-                            }
-                        },
-                        then: "4"
+    // songModel.findOne({
+    //     user: {
+    //         $case: {
+    //             branches: [
+    //                 {
+    //                     when: {
+    //                         id: 1
+    //                     },
+    //                     then: "1"
+    //                 },
+    //                 {
+    //                     when: {
+    //                         id: { $in: [1, 3, 4, 5, 6] }
+    //                     },
+    //                     then: "2"
+    //                 },
+    //                 {
+    //                     when: {
+    //                         id: { $nin: [7, 8, 9, 10, 11, 12] }
+    //                     },
+    //                     then: "3"
+    //                 },
+    //                 {
+    //                     when: {
+    //                         title: { $like: "%周杰伦%" }
+    //                     },
+    //                     then: "4"
+    //                 },
+    //                 {
+    //                     when: {
+    //                         title: {
+    //                             $select: {
+    //                                 table: "music_artist",
+    //                                 fields: ["id"],
+    //                                 query: {
+    //                                     name: "周杰伦"
+    //                                 }
+    //                             }
+    //                         }
+    //                     },
+    //                     then: "4"
+    //                 }
+    //             ],
+    //             else: "0"
+    //         }
+    //     }
+    // }, {
+    //     fields: [{
+    //         username: {
+    //             $case: {
+    //                 branches: [
+    //                     {
+    //                         when: {
+    //                             id: {
+    //                                 $case: {
+    //                                     branches: [
+    //                                         {
+    //                                             when: {
+    //                                                 name: { $eq: "周杰伦" }
+    //                                             },
+    //                                             then: "1"
+    //                                         }
+    //                                     ],
+    //                                     else: "0"
+    //                                 }
+    //                             }
+    //                         },
+    //                         then: "1"
+    //                     }
+    //                 ],
+    //                 else: "0"
+    //             }
+    //         },
+    //         nickname: {
+    //             $select: {
+    //                 table: "system_user",
+    //                 fields: ["nickname"],
+    //                 query: {
+    //                     id: { $col: "system_user.id" }
+    //                 },
+    //             }
+    //         }
+    //     }]
+    // })
+
+    // 排序
+
+    songModel.findOne({}, {
+        sort: {
+            id: "desc",
+            $expr: [{
+                query: {
+                    title: {
+                        $like: "111"
                     }
-                ],
-                else: "0"
-            }
+                },
+                order: "desc"
+            }, {
+                query: {
+                    name: {
+                        $like: "111"
+                    }
+                },
+                order: "desc"
+            }]
         }
-    }, {
-        fields: [{
-            username: {
-                $case: {
-                    branches: [
-                        {
-                            when: {
-                                id: {
-                                    $case: {
-                                        branches: [
-                                            {
-                                                when: {
-                                                    name: { $eq: "周杰伦" }
-                                                },
-                                                then: "1"
-                                            }
-                                        ],
-                                        else: "0"
-                                    }
-                                }
-                            },
-                            then: "1"
-                        }
-                    ],
-                    else: "0"
-                }
-            },
-            nickname: {
-                $select: {
-                    table: "system_user",
-                    fields: ["nickname"],
-                    query: {
-                        id: { $col: "system_user.id" }
-                    },
-                }
-            }
-        }]
     })
+
+    // songModel.findOne({
+    //     enabled: 1,
+    //     $and: [
+    //         {
+    //             title: {
+    //                 $like: "周杰伦"
+    //             },
+    //             $or: [
+    //                 {
+    //                     $exists: {
+    //                         table: "music_song_artist",
+    //                         fields: ["1"],
+    //                         query: {
+    //                             songId: { $col: "music_song.id" },
+    //                             "artist.name": { $like: "周杰伦" }
+    //                         },
+    //                         joins: [{
+    //                             table: "music_artist",
+    //                             as: "artist",
+    //                             on: {
+    //                                 "artist.id": "music_song_artist.artistId"
+    //                             }
+    //                         }]
+    //                     }
+    //                 }
+    //             ]
+    //         }
+    //     ]
+    // }, {
+    //     fields: ["id", "title", "cover", "playTotal", {
+    //         matchRank: {
+    //             $case: {
+    //                 branches: [
+    //                     {
+    //                         when: {
+    //                             title: 1
+    //                         },
+    //                         then: "1"
+    //                     },
+    //                     {
+    //                         when: {
+    //                             $exists: {
+    //                                 fields: ["1"],
+    //                                 query: {
+    //                                     songId: { $col: "music_song.id" },
+    //                                     "artist.name": { $like: "周杰伦" }
+    //                                 },
+    //                                 table: "music_song_artist",
+    //                                 joins: [{
+    //                                     table: "music_artist",
+    //                                     as: "artist",
+    //                                     on: {
+    //                                         "artist.id": "music_song_artist.artistId"
+    //                                     }
+    //                                 }]
+    //                             }
+    //                         },
+    //                         then: "2"
+    //                     },
+    //                     {
+    //                         when: {
+    //                             title: { $like: "%周杰伦%" }
+    //                         },
+    //                         then: "3"
+    //                     }
+    //                 ],
+    //                 else: "4"
+    //             }
+    //         }
+    //     }]
+    // })
 ]
 
 const results = await Promise.all(taks)

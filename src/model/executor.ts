@@ -96,7 +96,7 @@ class Executor<T> {
         params.push(...qParams)
         let joinSql = `SELECT ${bFields} FROM ${quote(this.table)}`;
         if (sql) joinSql += ` WHERE ${sql} `;
-        joinSql += ` ${parseOrder(sort)} LIMIT 1`;
+        joinSql += ` ${parseOrder(sort, params)} LIMIT 1`;
         const result = await this.execute(joinSql, params) as T[];
 
         if (typeof this.schema.hooks.afterFind === "function") {
@@ -219,7 +219,7 @@ class Executor<T> {
         params.push(...qParams)
         let joinSql = `SELECT ${bFields} FROM ${quote(this.table)}`;
         if (sql) joinSql += ` WHERE ${sql} `;
-        joinSql += ` ${parseOrder(sort)} ${this.buildLimit(limit, offset)} `;
+        joinSql += ` ${parseOrder(sort,params)} ${this.buildLimit(limit, offset)} `;
         const results = await this.execute(joinSql, params);
         if (typeof this.schema.hooks.afterFind === "function") {
             return this.schema.hooks.afterFind(results as any[]);
