@@ -37,7 +37,6 @@ export default function parseJsonArrayAgg(jsonArrayAgg) {
                     }
                 }
             }
-            console.log(expression);
             if (expression) {
                 sqlStr += `, ${expression}`;
                 if (as) {
