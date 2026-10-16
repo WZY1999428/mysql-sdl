@@ -5,7 +5,13 @@ import type { AggregateOps, PipelineStages, AggregationOptions, AggregateOption,
 export { LogicalMap } from "./logical.js";
 export { QueryOperatorMap } from "./conditional.js";
 export { UpdateAtomicMap } from "./updateAtomic.js";
-export type Fields = (string | Record<string, Select>)[];
+import type { Case } from "./case.js";
+export type FieldExpression = {
+    $select: Select;
+} | {
+    $case: Case;
+};
+export type Fields = (string | Record<string, FieldExpression>)[];
 type QueryFields<T> = {
     [P in keyof T & string]?: T[P] | Condition<T[P]>;
 };
@@ -29,6 +35,7 @@ type Condition<V> = QueryOperators<V> & {
     $exists?: boolean;
     $like?: string;
     $nlike?: string;
+    $case?: Case;
 };
 type ArithmeticOperator<T> = Partial<Record<keyof T, number>>;
 export type Update<T> = {

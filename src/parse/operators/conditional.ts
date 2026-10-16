@@ -29,7 +29,9 @@ export const QueryOperatorMap = {
         '$nlike': "NOT LIKE",
         "$between": "BETWEEN",
         "$select": "SELECT",
-        "$exists": "EXISTS"
+        "$exists": "EXISTS",
+        "$col": "COL",
+        "$case": "CASE"
 } as const;
 
 
@@ -59,6 +61,8 @@ export interface QueryOperators<V> {
         $exists?: V;
         /** 子查询 */
         $select?: Select
+        /** CASE */
+        $case?: any;
 }
 
 // 也就是：这个数组本身的类型

@@ -11,4 +11,5 @@ export const LogicalMap = {
     '$not':"NOT",
     '$nor':"NOT OR"
 } as const
+
 export type Logical = keyof typeof LogicalMap;

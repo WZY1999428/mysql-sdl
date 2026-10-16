@@ -15,6 +15,8 @@ export declare const QueryOperatorMap: {
     readonly $between: "BETWEEN";
     readonly $select: "SELECT";
     readonly $exists: "EXISTS";
+    readonly $col: "COL";
+    readonly $case: "CASE";
 };
 export interface QueryOperators<V> {
     /** 等于  {age:{$eq:1}} */
@@ -42,6 +44,8 @@ export interface QueryOperators<V> {
     $exists?: V;
     /** 子查询 */
     $select?: Select;
+    /** CASE */
+    $case?: any;
 }
 export type Select<T = any> = {
     table: string;

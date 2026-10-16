@@ -14,5 +14,7 @@ exports.QueryOperatorMap = {
     '$nlike': "NOT LIKE",
     "$between": "BETWEEN",
     "$select": "SELECT",
-    "$exists": "EXISTS"
+    "$exists": "EXISTS",
+    "$col": "COL",
+    "$case": "CASE"
 };

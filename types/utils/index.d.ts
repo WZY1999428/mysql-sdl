@@ -18,4 +18,5 @@ export declare function buildFields(fields?: Fields | "*"): {
     params: any[];
 };
 export declare function normalizeSqlValue(value: any): any;
+export declare function throwError(msg: string): never;
 //# sourceMappingURL=index.d.ts.map

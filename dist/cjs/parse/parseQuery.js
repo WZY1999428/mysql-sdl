@@ -4,10 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = parseQuery;
+exports.parseSelect = parseSelect;
 const index_js_1 = require("../utils/index.js");
 const index_js_2 = require("./operators/index.js");
+const parseJoin_js_1 = __importDefault(require("../parse/parseJoin.js"));
+const parseCase_js_1 = __importDefault(require("../parse/parseCase.js"));
 const regex_js_1 = __importDefault(require("./operators/regex.js"));
-const parseJoin_js_1 = __importDefault(require("./parseJoin.js"));
 // 校验是否为合法的逻辑子项数组
 function parseQuery(query) {
     const params = [];
@@ -21,12 +23,6 @@ function parseQuery(query) {
         })
     };
 }
-function throwError(msg) {
-    // 在信息前加上 [Query Error] 前缀，让它在日志中更显眼
-    const error = new Error(`\n[Query Error]\nCause: ${msg}\n`);
-    error.name = "QueryValidationError";
-    throw error;
-}
 function parse(query, params) {
     const segments = [];
     const keys = Object.keys(query);
@@ -34,11 +30,11 @@ function parse(query, params) {
         let value = query[key]; // 现在不报错了
         if (index_js_2.LogicalMap[key]) {
             if (!Array.isArray(value)) {
-                throwError(`Logical operator "${key}" requires an array of query objects. Received: ${JSON.stringify(value)}`);
+                (0, index_js_1.throwError)(`Logical operator "${key}" requires an array of query objects. Received: ${JSON.stringify(value)}`);
             }
             // ✅ 新增：检查数组里每一项必须是对象
             if (!value.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
-                throwError(`Invalid item in "${key}": Each element must be a non-null plain object.`);
+                (0, index_js_1.throwError)(`Invalid item in "${key}": Each element must be a non-null plain object.`);
             }
             if (key == "$and" || key == "$or") {
                 const arr = value.map((v) => parse(v, params));
@@ -66,7 +62,7 @@ function parse(query, params) {
                 params.push((0, regex_js_1.default)(value));
             }
             else {
-                throwError(`The value for "$regex" must be a JavaScript RegExp instance. Received: ${typeof value}`);
+                (0, index_js_1.throwError)(`The value for "$regex" must be a JavaScript RegExp instance. Received: ${typeof value}`);
             }
             continue;
         }
@@ -94,16 +90,35 @@ function buildWhereClause(value, key, segments, params) {
             //     throwError(`Ambiguous query at "${key}": SQL databases do not support implicit nested objects ${JSON.stringify(value)}. Did you mean "${key}.field" (JSON path) or an operator like "$eq"?`);
             // }
             if (!index_js_2.QueryOperatorMap[op]) {
-                throwError(`Invalid operator "${op}" at "${key}"`);
+                (0, index_js_1.throwError)(`Invalid operator "${op}" at "${key}"`);
             }
             const val = value[op];
+            console.log("opopopopopopopopop", op);
             if (op === "$select") {
-                segments.push(`${(0, index_js_1.quote)(key)} = (${parseSelect(key, val, params)})`);
+                segments.push(`${(0, index_js_1.quote)(key)} = (${parseSelect(key, val, params)}) `);
+                break;
+            }
+            if (op === "$case") {
+                const caseSql = (0, parseCase_js_1.default)(key, val, params);
+                segments.push(`${(0, index_js_1.quote)(key)} = ${caseSql}`);
+                break;
+            }
+            if (op === "$col") {
+                if (val && typeof val === 'string') {
+                    segments.push(`${key} = ${(0, index_js_1.quote)(val)}`);
+                }
+                else {
+                    (0, index_js_1.throwError)(`"${op}" at "${key}" requires a string value. Received: ${JSON.stringify(val)}`);
+                }
+                continue;
+            }
+            if (op === "$exists") {
+                segments.push(`${(0, index_js_1.quote)(key)} = EXISTS (${parseSelect(key, val, params)})`);
                 continue;
             }
             if (op === '$between') {
                 if (!Array.isArray(val)) {
-                    throwError(`"$between" operator at "${key}" requires an array of exactly 2 numbers.`);
+                    (0, index_js_1.throwError)(`"$between" operator at "${key}" requires an array of exactly 2 numbers.`);
                 }
                 const sorted = [...val].sort((a, b) => {
                     const da = a instanceof Date ? a.getTime() : Date.parse(a);
@@ -119,11 +134,11 @@ function buildWhereClause(value, key, segments, params) {
             else if (index_js_2.QueryOperatorMap[op]) {
                 if (op == "$in" || op == "$nin") {
                     if (!Array.isArray(val)) {
-                        throwError(`"${op}" operator at "${key}" expects an array. Received: ${typeof val}`);
+                        (0, index_js_1.throwError)(`"${op}" operator at "${key}" expects an array. Received: ${typeof val}`);
                     }
                     ;
                     if (!val.every((v) => typeof v === "number" || typeof v === "string" || (0, index_js_1.isObject)(v))) {
-                        throwError(`Invalid collection for "${op}" at "${key}": Elements must be strings or numbers. (Found invalid item in: ${JSON.stringify(val)})`);
+                        (0, index_js_1.throwError)(`Invalid collection for "${op}" at "${key}": Elements must be strings or numbers. (Found invalid item in: ${JSON.stringify(val)})`);
                     }
                     segments.push(`${key} ${index_js_2.QueryOperatorMap[op]} (${val.map((v) => {
                         if (typeof v === "object") {
@@ -137,27 +152,14 @@ function buildWhereClause(value, key, segments, params) {
                 }
                 else if (op == "$like" || op == "$nlike") {
                     if (val && typeof val !== "string" && typeof val !== 'number') {
-                        throwError(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`);
+                        (0, index_js_1.throwError)(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`);
                     }
                     segments.push(`${key} ${index_js_2.QueryOperatorMap[op]} ?`);
                     params.push(val);
                 }
                 else {
-                    if ((0, index_js_1.isObject)(val)) {
-                        if (val.$col && typeof val.$col === 'string') {
-                            const sqlOp = index_js_2.QueryOperatorMap[op];
-                            segments.push(`${key} ${sqlOp}  ${(0, index_js_1.quote)(val.$col)}`);
-                        }
-                        else if (op === "$exists") {
-                            segments.push(`${(0, index_js_1.quote)(key)} = EXISTS (${parseSelect(key, val, params)})`);
-                        }
-                        else {
-                            throwError(`"${op}" at "${key}" requires an object with a "$col" property. Received: ${JSON.stringify(val)}`);
-                        }
-                        continue;
-                    }
                     if (val && typeof val !== "string" && typeof val !== 'number') {
-                        throwError(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`);
+                        (0, index_js_1.throwError)(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`);
                     }
                     const sqlOp = index_js_2.QueryOperatorMap[op];
                     segments.push(`${key} ${sqlOp} ?`);
@@ -166,7 +168,7 @@ function buildWhereClause(value, key, segments, params) {
             }
             else if (typeof val === 'object') {
                 if (Array.isArray(val) && !val.every(v => typeof v === 'object' && v !== null && !Array.isArray(v))) {
-                    throwError(`Invalid nested logic: "${op}" at "${key}" must contain an array of query objects. (Check: ${JSON.stringify(val)})`);
+                    (0, index_js_1.throwError)(`Invalid nested logic: "${op}" at "${key}" must contain an array of query objects. (Check: ${JSON.stringify(val)})`);
                 }
             }
         }
@@ -178,16 +180,16 @@ function buildWhereClause(value, key, segments, params) {
 }
 function parseSelect(key, val, params) {
     if (typeof val !== "object") {
-        throwError(`"$select" operator at "${key}" requires an object.`);
+        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires an object.`);
     }
     if (!val.table || typeof val.table !== "string") {
-        throwError(`"$select" operator at "${key}" requires a "table" property.`);
+        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "table" property.`);
     }
     if (val.fields && !Array.isArray(val.fields)) {
-        throwError(`"$select" operator at "${key}" requires a "fields" property as an array.`);
+        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "fields" property as an array.`);
     }
     if (!val.query || typeof val.query !== "object") {
-        throwError(`"$select" operator at "${key}" requires a "query" property as an object.`);
+        (0, index_js_1.throwError)(`"$select" operator at "${key}" requires a "query" property as an object.`);
     }
     let limitStr = '';
     if (val.limit !== undefined && val.limit !== null) {

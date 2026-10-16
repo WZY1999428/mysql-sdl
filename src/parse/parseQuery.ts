@@ -1,10 +1,12 @@
-import { isObject, quote } from "../utils/index.js";
+import { isObject, quote, throwError } from "../utils/index.js";
 import { LogicalMap, QueryOperatorMap } from "./operators/index.js";
 import type { Select } from "./operators/conditional.js";
+import parseJoin from "../parse/parseJoin.js"
+import parseCase from "../parse/parseCase.js"
 
 import type { Query, Logical, QueryOperators, } from "./operators/index.js";
+import type { Case } from "./operators/case.js";
 import jsRegexToMySQL from "./operators/regex.js"
-import parseJoin from "./parseJoin.js"
 type OperatorKeys = keyof QueryOperators<any>;
 
 // 校验是否为合法的逻辑子项数组
@@ -23,14 +25,6 @@ export default function parseQuery<T>(query: Query<T>): { sql: string, params: a
 
 }
 
-function throwError(msg: string): never {
-    // 在信息前加上 [Query Error] 前缀，让它在日志中更显眼
-    const error = new Error(`\n[Query Error]\nCause: ${msg}\n`);
-    error.name = "QueryValidationError";
-    throw error;
-}
-
-
 
 
 function parse<T>(query: Query<T>, params: any[]) {
@@ -48,18 +42,18 @@ function parse<T>(query: Query<T>, params: any[]) {
             }
             if (key == "$and" || key == "$or") {
                 const arr = value.map((v) => parse(v, params));
-                if(arr.length) {
+                if (arr.length) {
                     segments.push(`(${arr.join(` ${LogicalMap[key as Logical]} `)})`);
                 }
             } else if (key === '$not') {
                 const arr = value.map((v) => parse(v, params));
-                if(arr.length) {
+                if (arr.length) {
                     segments.push(`NOT (${arr.join(' AND ')})`);
                 }
 
             } else if (key === '$nor') {
                 const arr = value.map((v) => parse(v, params));
-                if(arr.length) {
+                if (arr.length) {
                     segments.push(`NOT (${arr.join(' OR ')})`);
                 }
 
@@ -112,21 +106,41 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
             // if ((op as any).startsWith("$")) {
             //     throwError(`Ambiguous query at "${key}": SQL databases do not support implicit nested objects ${JSON.stringify(value)}. Did you mean "${key}.field" (JSON path) or an operator like "$eq"?`);
             // }
-
             if (!QueryOperatorMap[op as OperatorKeys]) {
                 throwError(`Invalid operator "${op}" at "${key}"`);
             }
 
             const val = (value as Record<string, any>)[op as string];
 
+            console.log("opopopopopopopopop", op);
 
             if (op === "$select") {
 
-                segments.push(`${quote(key as string)} = (${parseSelect(key as string, val as Select, params)})`);
+                segments.push(`${quote(key as string)} = (${parseSelect(key as string, val as Select, params)}) `);
 
-                continue;
+                break;
             }
 
+            if (op === "$case") {
+                const caseSql = parseCase(key as string, val as Case, params);
+                segments.push(`${quote(key as string)} = ${caseSql}`);
+                break;
+            }
+
+
+            if (op === "$col") {
+                if (val && typeof val === 'string') {
+                    segments.push(`${key} = ${quote(val)}`);
+                } else {
+                    throwError(`"${op}" at "${key}" requires a string value. Received: ${JSON.stringify(val)}`);
+                }
+                continue;
+            }
+            
+            if (op === "$exists") {
+                segments.push(`${quote(key as string)} = EXISTS (${parseSelect(key as string, val as Select, params)})`);
+                continue;
+            }
 
             if (op === '$between') {
                 if (!Array.isArray(val)) {
@@ -144,7 +158,6 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                 params.push(sorted[0], sorted.at(-1))
 
             } else if (QueryOperatorMap[op as OperatorKeys]) {
-
 
                 if (op == "$in" || op == "$nin") {
 
@@ -179,18 +192,6 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                     params.push(val);
 
                 } else {
-                    if (isObject(val)) {
-                        if (val.$col && typeof val.$col === 'string') {
-                            const sqlOp = QueryOperatorMap[op as OperatorKeys];
-                            segments.push(`${key} ${sqlOp}  ${quote(val.$col)}`);
-                        } else if (op === "$exists") {
-                            segments.push(`${quote(key as string)} = EXISTS (${parseSelect(key as string, val as Select, params)})`);
-                        } else {
-                            throwError(`"${op}" at "${key}" requires an object with a "$col" property. Received: ${JSON.stringify(val)}`);
-                        }
-                        continue;
-                    }
-
 
                     if (val && typeof val !== "string" && typeof val !== 'number') {
                         throwError(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`)
@@ -215,7 +216,9 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
 }
 
 
-function parseSelect(key: string, val: Select, params: any[]) {
+
+
+export function parseSelect(key: string, val: Select, params: any[]) {
     if (typeof val !== "object") {
         throwError(`"$select" operator at "${key}" requires an object.`);
     }

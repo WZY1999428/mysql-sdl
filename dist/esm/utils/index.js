@@ -3,7 +3,8 @@
  * 支持格式: "name" -> "`name`"
  * 支持格式: "user.name" -> "`user`.`name`"
  */
-import { parseQuery } from "../parse/index.js";
+import { parseSelect } from "../parse/parseQuery.js";
+import parseCase from "../parse/parseCase.js";
 export function quote(identifier) {
     // 1. 空值或 * 不处理
     if (!identifier || identifier === '*')
@@ -84,45 +85,50 @@ export function buildFields(fields = "*") {
                 // 处理 Select 类型
                 const selectFields = [];
                 for (const [key, obj] of Object.entries(f)) {
-                    if (!obj.query) {
-                        throw new Error("Select query is required");
+                    if ("$case" in obj) {
+                        const caseSql = parseCase(key, obj.$case, params);
+                        selectFields.push(`(${caseSql}) AS ${quote(key)}`);
+                        continue;
                     }
-                    if (!obj.table) {
-                        throw new Error("Select table is required");
+                    if ("$select" in obj) {
+                        const selectSql = parseSelect(key, obj.$select, params);
+                        selectFields.push(`(${selectSql}) AS ${quote(key)}`);
+                        continue;
                     }
-                    if (obj.type === 'count') {
-                        obj.fields = [`COUNT(${obj.fields?.[0] || '*'})`];
-                    }
-                    else if (obj.type === "raw") {
-                        if (!obj.fields || obj.fields.length === 0) {
-                            throw new Error("Select fields is required for raw type");
-                        }
-                        obj.fields = [obj.fields[0]];
-                    }
-                    else if (obj.type === "jsonObject") {
-                        obj.fields = [
-                            `JSON_OBJECT(${obj.fields?.map((f) => `'${f}', ${f}`).join(', ')})`
-                        ];
-                    }
-                    else if (obj.type === "jsonArray") {
-                        obj.fields = [
-                            `JSON_ARRAYAGG(JSON_OBJECT(${obj.fields?.map((f) => `'${f}', ${f}`).join(', ')}))`
-                        ];
-                    }
-                    let limitStr = '';
-                    if (obj.limit !== undefined && obj.limit !== null) {
-                        const limit = Number(obj.limit);
-                        const offset = obj.offset ? Number(obj.offset) : 0;
-                        // 推荐使用 MySQL 兼容性最好的 "LIMIT offset, count" 格式
-                        limitStr = ` LIMIT ${offset}, ${limit}`;
-                    }
-                    else {
-                        // 标量子查询/默认保护：默认限制 1 条
-                        limitStr = ' LIMIT 1';
-                    }
-                    const { sql, params: p } = parseQuery(obj.query);
-                    params.push(...p);
-                    selectFields.push(`(SELECT ${obj.fields?.join(', ') || '*'} FROM ${obj.table} WHERE ${sql} ${limitStr}) as ${key}`);
+                    // if (!obj.query) {
+                    //     throw new Error("Select query is required");
+                    // }
+                    // if (!obj.table) {
+                    //     throw new Error("Select table is required");
+                    // }
+                    // if (obj.type === 'count') {
+                    //     obj.fields = [`COUNT(${obj.fields?.[0] || '*'})`];
+                    // } else if (obj.type === "raw") {
+                    //     if (!obj.fields || obj.fields.length === 0) {
+                    //         throw new Error("Select fields is required for raw type");
+                    //     }
+                    //     obj.fields = [obj.fields[0]!];
+                    // } else if (obj.type === "jsonObject") {
+                    //     obj.fields = [
+                    //         `JSON_OBJECT(${obj.fields?.map((f: any) => `'${f}', ${f}`).join(', ')})`
+                    //     ];
+                    // } else if (obj.type === "jsonArray") {
+                    //     obj.fields = [
+                    //         `JSON_ARRAYAGG(JSON_OBJECT(${obj.fields?.map((f: any) => `'${f}', ${f}`).join(', ')}))`
+                    //     ];
+                    // }
+                    // let limitStr = '';
+                    // if (obj.limit !== undefined && obj.limit !== null) {
+                    //     const limit = Number(obj.limit);
+                    //     const offset = obj.offset ? Number(obj.offset) : 0;
+                    //     // 推荐使用 MySQL 兼容性最好的 "LIMIT offset, count" 格式
+                    //     limitStr = ` LIMIT ${offset}, ${limit}`;
+                    // } else {
+                    //     // 标量子查询/默认保护：默认限制 1 条
+                    //     limitStr = ' LIMIT 1';
+                    // }
+                    // const { sql, params: p } = parseQuery(obj.query as any);
+                    // params.push(...p);
                 }
                 return selectFields.join(', ');
             }
@@ -142,4 +148,10 @@ export function normalizeSqlValue(value) {
         else
             return value;
     }
+}
+export function throwError(msg) {
+    // 在信息前加上 [Query Error] 前缀，让它在日志中更显眼
+    const error = new Error(`\n[Query Error]\nCause: ${msg}\n`);
+    error.name = "QueryValidationError";
+    throw error;
 }
