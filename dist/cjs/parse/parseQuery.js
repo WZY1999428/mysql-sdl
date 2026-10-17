@@ -169,9 +169,16 @@ function buildWhereClause(value, key, segments, params) {
                     if (val && typeof val !== "string" && typeof val !== 'number') {
                         (0, index_js_1.throwError)(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`);
                     }
-                    const sqlOp = index_js_2.QueryOperatorMap[op];
-                    segments.push(`${key} ${sqlOp} ?`);
-                    params.push(val);
+                    if (typeof val === 'object' && val !== null) {
+                        const sql = parse(val, params);
+                        const sqlOp = index_js_2.QueryOperatorMap[op];
+                        segments.push(`${key} ${sqlOp} ${sql}`);
+                    }
+                    else {
+                        const sqlOp = index_js_2.QueryOperatorMap[op];
+                        segments.push(`${key} ${sqlOp} ?`);
+                        params.push(val);
+                    }
                 }
             }
             else if (typeof val === 'object') {
