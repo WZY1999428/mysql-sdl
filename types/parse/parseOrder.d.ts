@@ -1,5 +1,5 @@
 type Expr = {
-    query: any;
+    expr: any;
     order?: 'asc' | 'desc';
 };
 export type OrderBy<T> = Partial<Record<keyof T | string, 'asc' | 'desc'>> | {

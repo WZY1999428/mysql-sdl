@@ -13,7 +13,7 @@ function parseOrder(order, params) {
             continue;
         if (k === "$expr" && Array.isArray(dir)) {
             for (const expr of dir) {
-                const { sql, params: newParams } = (0, parseQuery_js_1.default)(expr.query);
+                const { sql, params: newParams } = (0, parseQuery_js_1.default)(expr.expr);
                 orderSql.push(`(${sql}) ${(expr.order ?? "asc").toUpperCase()}`);
                 params?.push(...newParams);
             }
