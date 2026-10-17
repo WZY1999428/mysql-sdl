@@ -80,6 +80,16 @@ function parse<T>(query: Query<T>, params: any[]) {
             continue;
         }
 
+
+        if (key === "$col") {
+            if (typeof value === "string") {
+                segments.push(String(value));
+            } else {
+                throwError(`The value for "$col" must be a string or number. Received: ${typeof value}`);
+            }
+            continue;
+        }
+
         // 处理 $json 操作符
         if (key === "$json") {
             for (let k in value) {
@@ -137,19 +147,14 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                 break;
             }
 
-
             if (op === "$col") {
-                if (val && typeof val === 'string') {
-                    segments.push(`${key} = ${quote(val)}`);
-                } else {
-                    throwError(`"${op}" at "${key}" requires a string value. Received: ${JSON.stringify(val)}`);
-                }
-                continue;
+                segments.push(`${key} = ${quote(val)}`);
+                break;
             }
 
             if (op === "$exists") {
                 segments.push(`${quote(key as string)} = EXISTS (${parseSelect(key as string, val as Select, params)})`);
-                continue;
+                break;
             }
 
             if (op === '$between') {
@@ -203,9 +208,9 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
 
                 } else {
 
-                    if (val && typeof val !== "string" && typeof val !== 'number') {
-                        throwError(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`)
-                    }
+                    // if (val && typeof val !== "string" && typeof val !== 'number') {
+                    //     throwError(`"${op}" at "${key}" only accepts string or number values. Received: ${typeof val}`)
+                    // }
                     if (typeof val === 'object' && val !== null) {
                         const sql = parse(val, params);
                         const sqlOp = QueryOperatorMap[op as OperatorKeys];

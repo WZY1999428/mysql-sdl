@@ -1,6 +1,6 @@
 const ORDER_MAP = { 'asc': 'ASC', 'desc': 'DESC' }
 type Expr = {
-    query: any;
+    expr: any;
     order?: 'asc' | 'desc';
 };
 export type OrderBy<T> =
@@ -23,7 +23,7 @@ export default function parseOrder<T>(
         if (k === "$expr" && Array.isArray(dir)) {
           
             for (const expr of dir) {
-                const { sql, params: newParams } = parseQuery(expr.query);
+                const { sql, params: newParams } = parseQuery(expr.expr);
                 orderSql.push(
                     `(${sql}) ${(expr.order ?? "asc").toUpperCase()}`
                 );

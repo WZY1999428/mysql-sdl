@@ -163,28 +163,37 @@ const taks = [
     //     }]
     // })
 
-    // 排序
 
-    songModel.findOne({}, {
-        sort: {
-            id: "desc",
-            $expr: [{
-                query: {
-                    title: {
-                        $like: "111"
-                    }
-                },
-                order: "desc"
-            }, {
-                query: {
-                    name: {
-                        $like: "111"
-                    }
-                },
-                order: "desc"
-            }]
+    songModel.findOne({
+        playlistId: {
+            $eq: {
+                $col: "music_playlist.id"
+            }
         }
-    })
+    }),
+
+
+    // // 排序
+    // songModel.findOne({}, {
+    //     sort: {
+    //         id: "desc",
+    //         $expr: [{
+    //             expr: {
+    //                 title: {
+    //                     $like: "111"
+    //                 }
+    //             },
+    //             order: "desc"
+    //         }, {
+    //             expr: {
+    //                 name: {
+    //                     $like: "111"
+    //                 }
+    //             },
+    //             order: "desc"
+    //         }]
+    //     }
+    // })
 
     // songModel.findOne({
     //     enabled: 1,
