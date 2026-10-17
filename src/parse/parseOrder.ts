@@ -6,7 +6,8 @@ type Expr = {
 export type OrderBy<T> =
     | Partial<Record<keyof T | string, 'asc' | 'desc'>>
     | {
-        $expr: Expr[];
+        $expr?: Expr[];
+        $random?: boolean;
     };
 
 import parseQuery from './parseQuery.js'
@@ -21,7 +22,7 @@ export default function parseOrder<T>(
         if (dir == null) continue;
 
         if (k === "$expr" && Array.isArray(dir)) {
-          
+
             for (const expr of dir) {
                 const { sql, params: newParams } = parseQuery(expr.expr);
                 orderSql.push(
@@ -31,7 +32,12 @@ export default function parseOrder<T>(
             }
             continue;
         }
-        
+
+        if (k === "$random" && dir === true) {
+            orderSql.push("RAND()");
+            continue;
+        }
+
         orderSql.push(
             `${k} ${ORDER_MAP[dir as keyof typeof ORDER_MAP]}`
         );

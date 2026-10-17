@@ -164,36 +164,21 @@ const taks = [
     // })
 
 
-    songModel.findOne({
-        playlistId: {
-            $eq: {
-                $col: "music_playlist.id"
-            }
-        }
-    }),
+    // songModel.findOne({
+    //     playlistId: {
+    //         $eq: {
+    //             $col: "music_playlist.id"
+    //         }
+    //     }
+    // }),
 
 
     // // 排序
-    // songModel.findOne({}, {
-    //     sort: {
-    //         id: "desc",
-    //         $expr: [{
-    //             expr: {
-    //                 title: {
-    //                     $like: "111"
-    //                 }
-    //             },
-    //             order: "desc"
-    //         }, {
-    //             expr: {
-    //                 name: {
-    //                     $like: "111"
-    //                 }
-    //             },
-    //             order: "desc"
-    //         }]
-    //     }
-    // })
+    songModel.findOne({}, {
+        sort: {
+            $random: true,
+        }
+    })
 
     // songModel.findOne({
     //     enabled: 1,

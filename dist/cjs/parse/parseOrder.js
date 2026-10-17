@@ -19,6 +19,10 @@ function parseOrder(order, params) {
             }
             continue;
         }
+        if (k === "$random" && dir === true) {
+            orderSql.push("RAND()");
+            continue;
+        }
         orderSql.push(`${k} ${ORDER_MAP[dir]}`);
     }
     if (orderSql.length === 0)

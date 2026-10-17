@@ -3,7 +3,8 @@ type Expr = {
     order?: 'asc' | 'desc';
 };
 export type OrderBy<T> = Partial<Record<keyof T | string, 'asc' | 'desc'>> | {
-    $expr: Expr[];
+    $expr?: Expr[];
+    $random?: boolean;
 };
 export default function parseOrder<T>(order: OrderBy<T>, params?: any[]): string;
 export {};
