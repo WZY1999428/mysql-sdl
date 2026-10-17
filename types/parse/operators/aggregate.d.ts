@@ -51,12 +51,12 @@ export type JoinSelectOption = (JoinSelectBase & {
     /** 聚合模式：jsonArray */
     type: 'jsonArray' | 'count' | 'jsonObject' | "array";
     /** 生成结果的别名，必填 */
-    as: string;
+    alias: string;
 }) | (JoinSelectBase & {
     /** 原始字段 */
     type?: 'raw';
     /** 生成结果的别名，可选 */
-    as?: string;
+    alias?: string;
 });
 interface NormalJoin {
     table: string;

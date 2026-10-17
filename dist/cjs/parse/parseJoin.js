@@ -117,35 +117,35 @@ function parseJoinSelect(joinItem) {
                 .map(([key, val]) => `'${key}', ${(0, index_js_1.quote)(val)}`)
                 .join(", ");
             if (item.type === "jsonObject") {
-                if (!item.as) {
+                if (!item.alias) {
                     throw new Error(`select as is required for jsonObject type on table ${joinItem.table}`);
                 }
                 // 生成你需要的 IF(...) 语句
-                return `IF(ISNULL(${(0, index_js_1.quote)(firstField)}) , NULL, JSON_OBJECT(${jsonObjectArgs})) AS ${(0, index_js_1.quote)(item.as)}`;
+                return `IF(ISNULL(${(0, index_js_1.quote)(firstField)}) , NULL, JSON_OBJECT(${jsonObjectArgs})) AS ${(0, index_js_1.quote)(item.alias)}`;
             }
             else {
-                if (!item.as) {
+                if (!item.alias) {
                     throw new Error(`select as is required for jsonArray type on table ${joinItem.table}`);
                 }
                 // 生成你需要的 IF(...) 语句
-                return `IF(COUNT(${(0, index_js_1.quote)(firstField)}) = 0, JSON_ARRAY(), JSON_ARRAYAGG(JSON_OBJECT(${jsonObjectArgs}))) AS ${(0, index_js_1.quote)(item.as)}`;
+                return `IF(COUNT(${(0, index_js_1.quote)(firstField)}) = 0, JSON_ARRAY(), JSON_ARRAYAGG(JSON_OBJECT(${jsonObjectArgs}))) AS ${(0, index_js_1.quote)(item.alias)}`;
             }
         }
         // 2. 如果是 非对象数组内容
         if (item.type === "array") {
-            if (!item.as) {
+            if (!item.alias) {
                 throw new Error(`select as is required for array type on table ${joinItem.table}`);
             }
             const countTarget = item.fields ? Object.values(item.fields)[0] : `${alias}.id`;
-            return `IF(COUNT(${(0, index_js_1.quote)(countTarget)}) = 0, JSON_ARRAY(), JSON_ARRAYAGG(${(0, index_js_1.quote)(countTarget)})) AS ${(0, index_js_1.quote)(item.as)}`;
+            return `IF(COUNT(${(0, index_js_1.quote)(countTarget)}) = 0, JSON_ARRAY(), JSON_ARRAYAGG(${(0, index_js_1.quote)(countTarget)})) AS ${(0, index_js_1.quote)(item.alias)}`;
         }
         // 2. 如果只是简单 COUNT
         if (item.type === 'count') {
-            if (!item.as) {
+            if (!item.alias) {
                 throw new Error(`select as is required for count type on table ${joinItem.table}`);
             }
             const countTarget = item.fields ? Object.values(item.fields)[0] : `${alias}.id`;
-            return `COUNT(${(0, index_js_1.quote)(countTarget)}) AS ${(0, index_js_1.quote)(item.as)}`;
+            return `COUNT(${(0, index_js_1.quote)(countTarget)}) AS ${(0, index_js_1.quote)(item.alias)}`;
         }
         // 3. 🌟 新增：RAW（原始字段类型），不进行聚合，直接查出字段
         if (item.type === 'raw') {

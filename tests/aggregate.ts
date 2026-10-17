@@ -51,7 +51,7 @@ const joinsResult = await userRole.aggregate({
             select: [
                 {
                     "type": "jsonArray",
-                    "as": "user",
+                    "alias": "user",
                     "fields": {
                         "id": "user.id",
                         "username": "user.username"
@@ -59,14 +59,14 @@ const joinsResult = await userRole.aggregate({
                 },
                 {
                     "type": "count",
-                    "as": "userCount",
+                    "alias": "userCount",
                     "fields": {
                         "id": "user.id"
                     }
                 },
                 {
                     "type": "raw",
-                    "as": "userRaw",
+                    "alias": "userRaw",
                     "fields": {
                         "id": "user.id",
                         "username": "user.username"
@@ -113,7 +113,7 @@ const paginationResult = await userRole.aggregate({
             select: [
                 {
                     "type": "jsonArray",
-                    "as": "user",
+                    "alias": "user",
                     "fields": {
                         "id": "user.id",
                         "username": "user.username"
@@ -121,14 +121,14 @@ const paginationResult = await userRole.aggregate({
                 },
                 {
                     "type": "count",
-                    "as": "userCount",
+                    "alias": "userCount",
                     "fields": {
                         "id": "user.id"
                     }
                 },
                 {
                     "type": "raw",
-                    "as": "userRaw",
+                    "alias": "userRaw",
                     "fields": {
                         "id": "user.id",
                         "username": "user.username"
@@ -136,7 +136,7 @@ const paginationResult = await userRole.aggregate({
                 },
                 {
                     "type": "jsonObject",
-                    "as": "userJsonObject",
+                    "alias": "userJsonObject",
                     "fields": {
                         "id": "user.id",
                         "username": "user.username"
