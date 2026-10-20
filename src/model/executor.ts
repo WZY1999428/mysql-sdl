@@ -72,16 +72,26 @@ class Executor<T> {
         }
     }
 
-    execute(joinSql: string, params: any[]) {
-
+    async execute(joinSql: string, params: any[]) {
         if (Executor.debug) {
+            console.log("\n========== SQL DEBUG ==========\n");
             debug.loggerSql(joinSql, params);
+            console.log("\n===============================\n");
+            const start = performance.now();
+            let result
+            if (this.conn) {
+                result = await this.client.withConnExecute(this.conn, joinSql, params);
+            }
+            result = await this.client.execute(joinSql, params);
+            const elapsed = (performance.now() - start).toFixed(2);
+            console.log(`[SQL ${elapsed}ms]`);
+            return result;
+        } else {
+            if (this.conn) {
+                return await this.client.withConnExecute(this.conn, joinSql, params);
+            }
+            return await this.client.execute(joinSql, params);
         }
-
-        if (this.conn) {
-            return this.client.withConnExecute(this.conn, joinSql, params);
-        }
-        return this.client.execute(joinSql, params);
     }
 
 
@@ -219,7 +229,7 @@ class Executor<T> {
         params.push(...qParams)
         let joinSql = `SELECT ${bFields} FROM ${quote(this.table)}`;
         if (sql) joinSql += ` WHERE ${sql} `;
-        joinSql += ` ${parseOrder(sort,params)} ${this.buildLimit(limit, offset)} `;
+        joinSql += ` ${parseOrder(sort, params)} ${this.buildLimit(limit, offset)} `;
         const results = await this.execute(joinSql, params);
         if (typeof this.schema.hooks.afterFind === "function") {
             return this.schema.hooks.afterFind(results as any[]);

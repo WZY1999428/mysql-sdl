@@ -17,9 +17,7 @@ const debug = {
             keywordCase: "upper",
             linesBetweenQueries: 2,
         });
-        console.log("\n========== SQL DEBUG ==========\n");
         console.log(prettySql);
-        console.log("\n===============================\n");
     }
 };
 exports.default = debug;
