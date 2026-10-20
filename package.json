@@ -31,11 +31,11 @@
   "author": "吴志云",
   "license": "ISC",
   "dependencies": {
-    "mysql2": "^3.20.0"
+    "mysql2": "^3.20.0",
+    "sql-formatter": "^15.9.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
-    "sql-formatter": "^15.9.0",
     "tsx": "^4.23.13",
     "typescript": "^5.0.0"
   }
