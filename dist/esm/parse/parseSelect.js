@@ -28,6 +28,8 @@ export default function parseSelect(key, val, params, selectMode = SelectMode.se
         select = joinSelect;
     }
     const fields = selectMode === SelectMode.exists ? "1" : val.fields?.map((f) => quote(f)).join(", ") || "";
+    if (fields)
+        select += `, ${fields}`;
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
@@ -35,5 +37,5 @@ export default function parseSelect(key, val, params, selectMode = SelectMode.se
     if (val.query) {
         whereStr = ` WHERE ${parse(val.query, params)}`;
     }
-    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
+    return ` SELECT ${select} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

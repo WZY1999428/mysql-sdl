@@ -34,6 +34,8 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
         select = joinSelect;
     }
     const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
+    if (fields)
+        select += `, ${fields}`;
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
@@ -41,5 +43,5 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
     if (val.query) {
         whereStr = ` WHERE ${(0, parseQuery_js_1.parse)(val.query, params)}`;
     }
-    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
+    return ` SELECT ${select} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

@@ -109,6 +109,8 @@ export function parse<T>(query: Query<T>, params: any[]) {
             key = quote(key)
         }
 
+
+
         buildWhereClause(value, key, segments, params);
 
     }
@@ -220,6 +222,7 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                         const sqlOp = QueryOperatorMap[op as OperatorKeys];
                         segments.push(`${key} ${sqlOp} ${sql}`);
                     } else {
+
                         const sqlOp = QueryOperatorMap[op as OperatorKeys];
                         segments.push(`${key} ${sqlOp} ?`);
                         params.push(val);
