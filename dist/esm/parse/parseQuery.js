@@ -1,8 +1,8 @@
 import { isObject, quote, throwError } from "../utils/index.js";
 import { LogicalMap, QueryOperatorMap } from "./operators/index.js";
 import { SelectMode } from "./operators/conditional.js";
-import parseJoin from "../parse/parseJoin.js";
 import parseCase from "../parse/parseCase.js";
+import parseSelect from "../parse/parseSelect.js";
 import jsRegexToMySQL from "./operators/regex.js";
 // 校验是否为合法的逻辑子项数组
 export default function parseQuery(query) {
@@ -17,7 +17,7 @@ export default function parseQuery(query) {
         })
     };
 }
-function parse(query, params) {
+export function parse(query, params) {
     const segments = [];
     const keys = Object.keys(query);
     for (let key of keys) {
@@ -82,6 +82,9 @@ function parse(query, params) {
         if (key === "$exists") {
             segments.push(` EXISTS (${parseSelect("", value, params, SelectMode.exists)}) `);
             continue;
+        }
+        if (typeof key === "string" && /^[\w$]+\.[\w$]+$/.test(key)) {
+            key = quote(key);
         }
         buildWhereClause(value, key, segments, params);
     }
@@ -150,10 +153,10 @@ function buildWhereClause(value, key, segments, params) {
                             return parseSelect(op, v, params);
                         }
                         else {
+                            params.push(v);
                             return "?";
                         }
                     }).join(",")})`);
-                    params.push(...val);
                 }
                 else if (op == "$like" || op == "$nlike") {
                     if (val && typeof val !== "string" && typeof val !== 'number') {
@@ -189,39 +192,4 @@ function buildWhereClause(value, key, segments, params) {
         segments.push(`${key} = ?`);
         params.push(value);
     }
-}
-export function parseSelect(key, val, params, selectMode = SelectMode.select) {
-    if (typeof val !== "object") {
-        throwError(`"${selectMode}" operator at "${key}" requires an object.`);
-    }
-    if (!val.table || typeof val.table !== "string") {
-        throwError(`"${selectMode}" operator at "${key}" requires a "table" property.`);
-    }
-    if (val.fields && !Array.isArray(val.fields)) {
-        throwError(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
-    }
-    let limitStr = '';
-    if (val.limit !== undefined && val.limit !== null) {
-        const limit = Number(val.limit);
-        const offset = val.offset ? Number(val.offset) : 0;
-        // 推荐使用 MySQL 兼容性最好的 "LIMIT offset, count" 格式
-        limitStr = ` LIMIT ${offset}, ${limit}`;
-    }
-    let joinSql = "";
-    let select = "";
-    if (val.joins && Array.isArray(val.joins)) {
-        const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = parseJoin(val.joins);
-        params.push(...joinParams);
-        joinSql = joinSqlStr;
-        select = joinSelect;
-    }
-    const fields = selectMode === SelectMode.exists ? "1" : val.fields?.map((f) => quote(f)).join(", ") || "*";
-    if (val.offset) {
-        limitStr += ` OFFSET ${val.offset}`;
-    }
-    let whereStr = "";
-    if (val.query) {
-        whereStr = ` WHERE ${parse(val.query, params)}`;
-    }
-    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

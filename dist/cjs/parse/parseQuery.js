@@ -4,12 +4,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.default = parseQuery;
-exports.parseSelect = parseSelect;
+exports.parse = parse;
 const index_js_1 = require("../utils/index.js");
 const index_js_2 = require("./operators/index.js");
 const conditional_js_1 = require("./operators/conditional.js");
-const parseJoin_js_1 = __importDefault(require("../parse/parseJoin.js"));
 const parseCase_js_1 = __importDefault(require("../parse/parseCase.js"));
+const parseSelect_js_1 = __importDefault(require("../parse/parseSelect.js"));
 const regex_js_1 = __importDefault(require("./operators/regex.js"));
 // 校验是否为合法的逻辑子项数组
 function parseQuery(query) {
@@ -87,8 +87,11 @@ function parse(query, params) {
             continue;
         }
         if (key === "$exists") {
-            segments.push(` EXISTS (${parseSelect("", value, params, conditional_js_1.SelectMode.exists)}) `);
+            segments.push(` EXISTS (${(0, parseSelect_js_1.default)("", value, params, conditional_js_1.SelectMode.exists)}) `);
             continue;
+        }
+        if (typeof key === "string" && /^[\w$]+\.[\w$]+$/.test(key)) {
+            key = (0, index_js_1.quote)(key);
         }
         buildWhereClause(value, key, segments, params);
     }
@@ -108,11 +111,11 @@ function buildWhereClause(value, key, segments, params) {
             }
             const val = value[op];
             if (op === "$select") {
-                segments.push(`${(0, index_js_1.quote)(key)} = (${parseSelect(key, val, params)}) `);
+                segments.push(`${(0, index_js_1.quote)(key)} = (${(0, parseSelect_js_1.default)(key, val, params)}) `);
                 break;
             }
             if (op === "$exists") {
-                segments.push(` ${(0, index_js_1.quote)(key)} = EXISTS (${parseSelect(key, value, params, conditional_js_1.SelectMode.exists)}) `);
+                segments.push(` ${(0, index_js_1.quote)(key)} = EXISTS (${(0, parseSelect_js_1.default)(key, value, params, conditional_js_1.SelectMode.exists)}) `);
                 break;
             }
             if (op === "$case") {
@@ -125,7 +128,7 @@ function buildWhereClause(value, key, segments, params) {
                 break;
             }
             if (op === "$exists") {
-                segments.push(`${(0, index_js_1.quote)(key)} = EXISTS (${parseSelect(key, val, params)})`);
+                segments.push(`${(0, index_js_1.quote)(key)} = EXISTS (${(0, parseSelect_js_1.default)(key, val, params)})`);
                 break;
             }
             if (op === '$between') {
@@ -154,13 +157,13 @@ function buildWhereClause(value, key, segments, params) {
                     }
                     segments.push(`${key} ${index_js_2.QueryOperatorMap[op]} (${val.map((v) => {
                         if (typeof v === "object") {
-                            return parseSelect(op, v, params);
+                            return (0, parseSelect_js_1.default)(op, v, params);
                         }
                         else {
+                            params.push(v);
                             return "?";
                         }
                     }).join(",")})`);
-                    params.push(...val);
                 }
                 else if (op == "$like" || op == "$nlike") {
                     if (val && typeof val !== "string" && typeof val !== 'number') {
@@ -196,39 +199,4 @@ function buildWhereClause(value, key, segments, params) {
         segments.push(`${key} = ?`);
         params.push(value);
     }
-}
-function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.select) {
-    if (typeof val !== "object") {
-        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires an object.`);
-    }
-    if (!val.table || typeof val.table !== "string") {
-        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "table" property.`);
-    }
-    if (val.fields && !Array.isArray(val.fields)) {
-        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
-    }
-    let limitStr = '';
-    if (val.limit !== undefined && val.limit !== null) {
-        const limit = Number(val.limit);
-        const offset = val.offset ? Number(val.offset) : 0;
-        // 推荐使用 MySQL 兼容性最好的 "LIMIT offset, count" 格式
-        limitStr = ` LIMIT ${offset}, ${limit}`;
-    }
-    let joinSql = "";
-    let select = "";
-    if (val.joins && Array.isArray(val.joins)) {
-        const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = (0, parseJoin_js_1.default)(val.joins);
-        params.push(...joinParams);
-        joinSql = joinSqlStr;
-        select = joinSelect;
-    }
-    const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "*";
-    if (val.offset) {
-        limitStr += ` OFFSET ${val.offset}`;
-    }
-    let whereStr = "";
-    if (val.query) {
-        whereStr = ` WHERE ${parse(val.query, params)}`;
-    }
-    return ` SELECT ${select ? `${select}, ` : ``} ${fields} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

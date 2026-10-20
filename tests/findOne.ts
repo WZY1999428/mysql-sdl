@@ -174,11 +174,11 @@ const taks = [
 
 
     // // 排序
-    songModel.findOne({}, {
-        sort: {
-            $random: true,
-        }
-    })
+    // songModel.findOne({}, {
+    //     sort: {
+    //         $random: true,
+    //     }
+    // })
 
     // songModel.findOne({
     //     enabled: 1,
@@ -251,6 +251,19 @@ const taks = [
     //         }
     //     }]
     // })
+    ,
+
+    userModel.findOne({
+        "system_user.id": "111",
+        ccc: "222"
+    }, {
+        fields: [{
+            $select: {
+                table: "system_user",
+                fields: ["id"]
+            }
+        }]
+    })
 ]
 
 const results = await Promise.all(taks)

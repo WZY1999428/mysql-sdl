@@ -11,7 +11,7 @@ export type FieldExpression = {
 } | {
     $case: Case;
 };
-export type Fields = (string | Record<string, FieldExpression>)[];
+export type Fields = (string | Record<string, FieldExpression> | FieldExpression)[];
 type QueryFields<T> = {
     [P in keyof T & string]?: T[P] | Condition<T[P]>;
 };
