@@ -11,7 +11,7 @@ import parseJoin from "../parse/parseJoin.js"
 import { ResultSetHeader } from "mysql2";
 
 class Executor<T> {
-    static debug: boolean = false
+    static logger: boolean = false
     constructor(
         private client: Client,
         private table: string,
@@ -73,7 +73,7 @@ class Executor<T> {
     }
 
     async execute(joinSql: string, params: any[]) {
-        if (Executor.debug) {
+        if (Executor.logger) {
             console.log("\n========== SQL DEBUG ==========\n");
             debug.loggerSql(joinSql, params);
             console.log("\n===============================\n");

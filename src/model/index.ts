@@ -9,13 +9,13 @@ import type { newConnection } from "../client.js";
 const transactionContext = new AsyncLocalStorage<newConnection>();
 class Model<T> {
     ready: Promise<void>
-    static debug: boolean = false
+    static logger: boolean = false
     constructor(
         public table: string,
         public schema: Schema<T>,
         public client: Cleint,
     ) {
-        Executor.debug = Model.debug;
+        Executor.logger = Model.logger;
         this.ready = this.createTable();
     };
 
