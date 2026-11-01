@@ -26,16 +26,16 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
         limitStr = ` LIMIT ${offset}, ${limit}`;
     }
     let joinSql = "";
-    let select = "";
+    const select = [];
     if (val.joins && Array.isArray(val.joins)) {
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = (0, parseJoin_js_1.default)(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        select = joinSelect;
+        select.push(joinSelect);
     }
     const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
     if (fields)
-        select += `, ${fields}`;
+        select.push(fields);
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
@@ -43,5 +43,5 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
     if (val.query) {
         whereStr = ` WHERE ${(0, parseQuery_js_1.parse)(val.query, params)}`;
     }
-    return ` SELECT ${select} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
+    return ` SELECT ${select.join(", ")} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

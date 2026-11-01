@@ -30,19 +30,18 @@ export default function parseSelect(key: string, val: Select, params: any[], sel
     }
 
     let joinSql = "";
-    let select = ""
+    const select = []
 
     if (val.joins && Array.isArray(val.joins)) {
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = parseJoin(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        select = joinSelect;
-
+        select.push(joinSelect);
     }
 
 
     const fields = selectMode === SelectMode.exists ? "1" : val.fields?.map((f: string) => quote(f)).join(", ") || "";
-    if (fields) select += `, ${fields}`;
+    if (fields) select.push(fields)
     if (val.offset) {
         limitStr += ` OFFSET ${val.offset}`;
     }
@@ -52,5 +51,5 @@ export default function parseSelect(key: string, val: Select, params: any[], sel
         whereStr = ` WHERE ${parse(val.query, params)}`;
     }
 
-    return ` SELECT ${select} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
+    return ` SELECT ${select.join(", ")} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
 }

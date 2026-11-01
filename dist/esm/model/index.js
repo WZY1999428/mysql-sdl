@@ -6,12 +6,12 @@ class Model {
     schema;
     client;
     ready;
-    static debug = false;
+    static logger = false;
     constructor(table, schema, client) {
         this.table = table;
         this.schema = schema;
         this.client = client;
-        Executor.debug = Model.debug;
+        Executor.logger = Model.logger;
         this.ready = this.createTable();
     }
     ;
@@ -36,56 +36,101 @@ class Model {
     buildExecutor() {
         return new Executor(this.client, this.table, this.schema);
     }
-    findMany(query, options = {}) {
-        return this.buildExecutor().findMany(query || {}, options);
+    async findMany(query, options = {}) {
+        // return this.buildExecutor().findMany(query || {}, options);
+        return await this.withCheckout((execute) => {
+            return execute.findMany(query || {}, options);
+        });
     }
-    findOne(query, options = {}) {
-        return this.buildExecutor().findOne(query || {}, options);
+    async findOne(query, options = {}) {
+        // return this.buildExecutor().findOne(query || {}, options);
+        return await this.withCheckout((execute) => {
+            return execute.findOne(query || {}, options);
+        });
     }
-    deleteOne(query) {
-        return this.buildExecutor().deleteOne(query || {});
+    async deleteOne(query) {
+        // return this.buildExecutor().deleteOne(query || {});
+        return await this.withCheckout((execute) => {
+            return execute.deleteOne(query || {});
+        });
     }
-    deleteMany(query) {
-        return this.buildExecutor().deleteMany(query || {});
+    async deleteMany(query) {
+        // return this.buildExecutor().deleteMany(query || {});
+        return await this.withCheckout((execute) => {
+            return execute.deleteMany(query || {});
+        });
     }
-    insertOne(data, opt) {
-        return this.buildExecutor().insertOne(data, opt);
+    async insertOne(data, opt) {
+        // return this.buildExecutor().insertOne(data, opt);
+        return await this.withCheckout((execute) => {
+            return execute.insertOne(data, opt);
+        });
     }
     async insertMany(data, opt) {
         if (!Array.isArray(data))
             throw new Error("[ODM] insertMany data must be an array");
-        const execute = new Executor(this.client, this.table, this.schema, opt?.useTransaction ? await this.client.getConnection() : undefined);
-        return execute.insertMany(data, opt);
+        // return execute.insertMany(data, opt);
+        return await this.withCheckout((execute) => {
+            return execute.insertMany(data, opt);
+        });
     }
-    updateOne(query, data) {
-        return this.buildExecutor().updateOne(query, data);
+    async updateOne(query, data) {
+        // return this.buildExecutor().updateOne(query, data);
+        return await this.withCheckout((execute) => {
+            return execute.updateOne(query, data);
+        });
     }
-    updateMany(query, data) {
-        return this.buildExecutor().updateMany(query, data);
+    async updateMany(query, data) {
+        // return this.buildExecutor().updateMany(query, data);
+        return await this.withCheckout((execute) => {
+            return execute.updateMany(query, data);
+        });
     }
-    aggregate(options) {
-        return this.buildExecutor().aggregate(options);
+    async aggregate(options) {
+        // return this.buildExecutor().aggregate(options);
+        return await this.withCheckout((execute) => {
+            return execute.aggregate(options);
+        });
     }
-    count(options) {
-        return this.buildExecutor().count(options);
+    async count(options) {
+        // return this.buildExecutor().count(options);
+        return await this.withCheckout((execute) => {
+            return execute.count(options);
+        });
     }
-    sum(options) {
-        return this.buildExecutor().sum(options);
+    async sum(options) {
+        // return this.buildExecutor().sum(options);
+        return await this.withCheckout((execute) => {
+            return execute.sum(options);
+        });
     }
-    avg(options) {
-        return this.buildExecutor().avg(options || {});
+    async avg(options) {
+        // return this.buildExecutor().avg(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.avg(options || {});
+        });
     }
-    max(options) {
-        return this.buildExecutor().max(options || {});
+    async max(options) {
+        // return this.buildExecutor().max(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.max(options || {});
+        });
     }
-    min(options) {
-        return this.buildExecutor().min(options || {});
+    async min(options) {
+        // return this.buildExecutor().min(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.min(options || {});
+        });
     }
-    clear() {
-        return this.buildExecutor().clear();
+    async clear() {
+        return await this.withCheckout((execute) => {
+            return execute.clear();
+        });
     }
-    execute(sql, params) {
-        return this.buildExecutor().execute(sql, params);
+    async execute(sql, params) {
+        return await this.withCheckout((execute) => {
+            return execute.execute(sql, params);
+        });
     }
     /**
     *推荐当前使用连接池时使用
@@ -109,23 +154,48 @@ class Model {
      * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
      * 报错：自动回滚 -> 抛出错误 -> 释放
      */
-    async withTransaction(callback) {
+    async withCheckout(callback) {
+        const existingConn = transactionContext.getStore();
+        if (existingConn) {
+            return callback(new Executor(this.client, this.table, this.schema, existingConn));
+        }
         const execute = await this.checkout();
-        let startd = false;
+        try {
+            return await transactionContext.run(execute.conn, () => callback(execute));
+        }
+        finally {
+            if (this.client.isPool) {
+                execute.release();
+            }
+        }
+    }
+    /**
+     * 自动事务包装器
+     * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
+     * 报错：自动回滚 -> 抛出错误 -> 释放
+     */
+    async withTransaction(callback) {
+        const existingConn = transactionContext.getStore();
+        // 如果已经存在事务连接，说明是嵌套事务，直接复用上下文执行即可（避免重复 BEGIN）
+        if (existingConn) {
+            return await callback(new Executor(this.client, this.table, this.schema, existingConn));
+        }
+        const execute = await this.checkout();
+        let started = false;
         try {
             await execute.beginTransaction();
-            startd = true;
+            started = true;
             const result = await transactionContext.run(execute.conn, () => callback(execute));
             await execute.commit();
             return result;
         }
         catch (error) {
-            if (startd)
+            if (started) {
                 await execute.rollback().catch(() => { });
+            }
             throw error;
         }
         finally {
-            // 只有是连接池时才需要 release
             if (this.client.isPool) {
                 execute.release();
             }

@@ -16,7 +16,13 @@ const taks = [
     // 查询姓名包含"张"的用户
     userModel.findMany({ name: { $like: "%张%" } }, { ...page }),
     // 查询日期范围
-    userModel.findMany({ query: { createdAt: { $gte: "2025-01-01 00:00:00" } } }, { ...page })
+    userModel.findMany({ createdAt: { $gte: "2025-01-01 00:00:00" } }, { ...page }),
+    userModel.findMany({
+        $or: [
+            { name: { $like: "%张%" } },
+            { name: { $like: "%张三%" } }
+        ]
+    })
 ]
 
 const results = await Promise.all(taks)

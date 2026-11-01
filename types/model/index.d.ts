@@ -9,7 +9,7 @@ declare class Model<T> {
     schema: Schema<T>;
     client: Cleint;
     ready: Promise<void>;
-    static debug: boolean;
+    static logger: boolean;
     constructor(table: string, schema: Schema<T>, client: Cleint);
     private createTable;
     private buildExecutor;
@@ -35,6 +35,12 @@ declare class Model<T> {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     checkout(): Promise<Executor<T>>;
+    /**
+     * 自动事务包装器
+     * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
+     * 报错：自动回滚 -> 抛出错误 -> 释放
+     */
+    withCheckout<P = any>(callback: (execute: Executor<T>) => Promise<P>): Promise<P>;
     /**
      * 自动事务包装器
      * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放

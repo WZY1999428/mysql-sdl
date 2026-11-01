@@ -286,7 +286,7 @@ class Executor<T> {
     async insertMany<T>(data: T[], opt: insertManyOptions = {}) {
         if (!Array.isArray(data) || data.length === 0) throw new Error("[ODM] insertMany data must be an array");
         const batch: T[][] = []
-        const { ignore = false, upsert = false, useTransaction = false, batchSize = 100 } = opt;
+        const { ignore = false, upsert = false, batchSize = 100 } = opt;
         if (data.length > batchSize) {
             for (let i = 0; i < data.length; i += batchSize) {
                 batch.push(data.slice(i, i + 100))
@@ -330,20 +330,7 @@ class Executor<T> {
             }
             results.info = `Records: ${results.affectedRows}  Fields: ${results.fieldCount}  Warnings: ${results.warningStatus}`
         }
-        if (useTransaction) {
-            let isTransactionStarted = false;
-            try {
-                await this.beginTransaction();
-                isTransactionStarted = true;
-                await insert();
-                await this.commit();
-            } catch (error) {
-                if (isTransactionStarted) await this.rollback().catch(() => { });
-                throw error
-            }
-        } else {
-            await insert();
-        }
+        await insert();
         return results as ResultSetHeader
     }
 

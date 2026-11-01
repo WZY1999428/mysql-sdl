@@ -117,17 +117,17 @@ await userRole.aggregate({
       select: [
         {
           type: "jsonArray",
-          as: "user",
+          alias: "user",
           fields: { id: "user.id", username: "user.username" }
         },
         {
           type: "count",
-          as: "userCount",
+          alias: "userCount",
           fields: { id: "user.id" }
         },
         {
           type: "jsonObject",
-          as: "userJsonObject",
+          alias: "userJsonObject",
           fields: { id: "user.id", username: "user.username" }
         }
       ]

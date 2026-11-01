@@ -7,7 +7,7 @@ class Executor {
     table;
     schema;
     conn;
-    static debug = false;
+    static logger = false;
     constructor(client, table, schema, conn) {
         this.client = client;
         this.table = table;
@@ -60,7 +60,7 @@ class Executor {
         }
     }
     async execute(joinSql, params) {
-        if (Executor.debug) {
+        if (Executor.logger) {
             console.log("\n========== SQL DEBUG ==========\n");
             debug.loggerSql(joinSql, params);
             console.log("\n===============================\n");
@@ -229,7 +229,7 @@ class Executor {
         if (!Array.isArray(data) || data.length === 0)
             throw new Error("[ODM] insertMany data must be an array");
         const batch = [];
-        const { ignore = false, upsert = false, useTransaction = false, batchSize = 100 } = opt;
+        const { ignore = false, upsert = false, batchSize = 100 } = opt;
         if (data.length > batchSize) {
             for (let i = 0; i < data.length; i += batchSize) {
                 batch.push(data.slice(i, i + 100));
@@ -274,23 +274,7 @@ class Executor {
             }
             results.info = `Records: ${results.affectedRows}  Fields: ${results.fieldCount}  Warnings: ${results.warningStatus}`;
         };
-        if (useTransaction) {
-            let isTransactionStarted = false;
-            try {
-                await this.beginTransaction();
-                isTransactionStarted = true;
-                await insert();
-                await this.commit();
-            }
-            catch (error) {
-                if (isTransactionStarted)
-                    await this.rollback().catch(() => { });
-                throw error;
-            }
-        }
-        else {
-            await insert();
-        }
+        await insert();
         return results;
     }
     async updateOne(query, data) {

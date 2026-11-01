@@ -12,7 +12,7 @@ class MySqlODM {
     debug = false;
     constructor(options) {
         this.models = new Map();
-        index_js_2.default.debug = options?.debug || false;
+        index_js_2.default.logger = options?.logger || false;
         console.log("Database connected");
     }
     async use(options, type = 'pool') {

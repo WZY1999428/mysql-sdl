@@ -7,7 +7,7 @@ class MySqlODM {
     debug = false;
     constructor(options) {
         this.models = new Map();
-        Model.debug = options?.debug || false;
+        Model.logger = options?.logger || false;
         console.log("Database connected");
     }
     async use(options, type = 'pool') {

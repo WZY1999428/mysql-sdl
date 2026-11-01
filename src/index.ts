@@ -9,10 +9,10 @@ class MySqlODM {
     debug: boolean = false;
 
     constructor(options?: {
-        debug?: boolean
+        logger?: boolean
     }) {
         this.models = new Map();
-        Model.debug = options?.debug || false;
+        Model.logger = options?.logger || false;
         console.log("Database connected");
     }
 

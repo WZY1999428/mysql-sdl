@@ -19,7 +19,6 @@ export type InsertOptions = {
     upsert?: boolean | string[];
 };
 export type insertManyOptions = {
-    useTransaction?: boolean;
     batchSize?: number;
 } & InsertOptions;
 export type UpdateOptions = {

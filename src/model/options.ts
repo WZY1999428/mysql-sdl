@@ -26,7 +26,6 @@ export type InsertOptions = {
 }
 
 export type insertManyOptions = {
-    useTransaction?: boolean,
     batchSize?: number
 } & InsertOptions
 

@@ -7,7 +7,7 @@ declare class MySqlODM {
     client: Client | null;
     debug: boolean;
     constructor(options?: {
-        debug?: boolean;
+        logger?: boolean;
     });
     use(options: ConnectionOptions, type?: 'connection' | 'pool'): Promise<void>;
     model<T>(table: string, schema?: Schema<T>): Promise<Model<T>>;

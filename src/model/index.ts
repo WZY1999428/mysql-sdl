@@ -42,76 +42,121 @@ class Model<T> {
         return new Executor(this.client, this.table, this.schema)
     }
 
-    findMany(query?: Query<T>, options: FindOptions<T> = {}) {
-        return this.buildExecutor().findMany(query || {}, options);
+    async findMany(query?: Query<T>, options: FindOptions<T> = {}) {
+        // return this.buildExecutor().findMany(query || {}, options);
+        return await this.withCheckout((execute) => {
+            return execute.findMany(query || {}, options);
+        })
     }
 
-    findOne(query?: Query<T>, options: FindOneOptions<T> = {}) {
-        return this.buildExecutor().findOne(query || {}, options);
+    async findOne(query?: Query<T>, options: FindOneOptions<T> = {}) {
+        // return this.buildExecutor().findOne(query || {}, options);
+        return await this.withCheckout((execute) => {
+            return execute.findOne(query || {}, options);
+        })
     }
 
 
-    deleteOne(query?: Query<T>) {
-        return this.buildExecutor().deleteOne(query || {});
+    async deleteOne(query?: Query<T>) {
+        // return this.buildExecutor().deleteOne(query || {});
+        return await this.withCheckout((execute) => {
+            return execute.deleteOne(query || {});
+        })
     }
 
 
-    deleteMany(query?: Query<T>) {
-        return this.buildExecutor().deleteMany(query || {});
+    async deleteMany(query?: Query<T>) {
+        // return this.buildExecutor().deleteMany(query || {});
+        return await this.withCheckout((execute) => {
+            return execute.deleteMany(query || {});
+        })
     }
 
-    insertOne(data: T, opt?: InsertOptions) {
-        return this.buildExecutor().insertOne(data, opt);
+    async insertOne(data: T, opt?: InsertOptions) {
+        // return this.buildExecutor().insertOne(data, opt);
+        return await this.withCheckout((execute) => {
+            return execute.insertOne(data, opt);
+        })
     }
 
     async insertMany(data: T[], opt?: insertManyOptions) {
         if (!Array.isArray(data)) throw new Error("[ODM] insertMany data must be an array");
-        const execute = new Executor(this.client, this.table, this.schema, opt?.useTransaction ? await this.client.getConnection() : undefined)
-        return execute.insertMany(data, opt);
+        // return execute.insertMany(data, opt);
+        return await this.withCheckout((execute) => {
+            return execute.insertMany(data, opt);
+        })
     }
 
-    updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader> {
-        return this.buildExecutor().updateOne(query, data);
-    }
-
-
-
-    updateMany(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader> {
-        return this.buildExecutor().updateMany(query, data);
-    }
-
-
-    aggregate(options: AggregationOptions<T>) {
-        return this.buildExecutor().aggregate(options);
+    async updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader> {
+        // return this.buildExecutor().updateOne(query, data);
+        return await this.withCheckout((execute) => {
+            return execute.updateOne(query, data);
+        })
     }
 
 
-    count<T>(options: MathOptions<T>): Promise<number> {
-        return this.buildExecutor().count(options);
+
+    async updateMany(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader> {
+        // return this.buildExecutor().updateMany(query, data);
+        return await this.withCheckout((execute) => {
+            return execute.updateMany(query, data);
+        })
     }
 
-    sum<T>(options: MathOptions<T>): Promise<number> {
-        return this.buildExecutor().sum(options);
+
+    async aggregate(options: AggregationOptions<T>) {
+        // return this.buildExecutor().aggregate(options);
+        return await this.withCheckout((execute) => {
+            return execute.aggregate(options);
+        })
     }
 
-    avg(options?: MathOptions<T>) {
-        return this.buildExecutor().avg(options || {});
+
+    async count<T>(options: MathOptions<T>): Promise<number> {
+        // return this.buildExecutor().count(options);
+        return await this.withCheckout((execute) => {
+            return execute.count(options);
+        })
     }
 
-    max(options?: MathOptions<T>) {
-        return this.buildExecutor().max(options || {});
+    async sum<T>(options: MathOptions<T>): Promise<number> {
+        // return this.buildExecutor().sum(options);
+        return await this.withCheckout((execute) => {
+            return execute.sum(options);
+        })
     }
 
-    min(options?: MathOptions<T>) {
-        return this.buildExecutor().min(options || {});
+    async avg(options?: MathOptions<T>) {
+        // return this.buildExecutor().avg(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.avg(options || {});
+        })
     }
 
-    clear() {
-        return this.buildExecutor().clear();
+    async max(options?: MathOptions<T>) {
+        // return this.buildExecutor().max(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.max(options || {});
+        })
     }
 
-    execute(sql: string, params: any[]) {
-        return this.buildExecutor().execute(sql, params);
+    async min(options?: MathOptions<T>) {
+        // return this.buildExecutor().min(options || {});
+        return await this.withCheckout((execute) => {
+            return execute.min(options || {});
+        })
+    }
+
+    async clear() {
+        return await this.withCheckout((execute) => {
+            return execute.clear()
+        })
+    }
+
+    async execute(sql: string, params: any[]) {
+        return await this.withCheckout((execute) => {
+            return execute.execute(sql, params)
+        })
     }
 
     /**
@@ -123,12 +168,7 @@ class Model<T> {
         const transactionConn = transactionContext.getStore();
         if (transactionConn) {
             // 绑定当前事务连接，不拥有该连接
-            return new Executor(
-                this.client,
-                this.table,
-                this.schema,
-                transactionConn,
-            );
+            return new Executor(this.client, this.table, this.schema, transactionConn);
         }
 
         const conn = await this.client.getConnection();
@@ -138,28 +178,63 @@ class Model<T> {
     }
 
 
+
+    /**
+     * 自动事务包装器
+     * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
+     * 报错：自动回滚 -> 抛出错误 -> 释放
+     */
+    async withCheckout<P = any>(callback: (execute: Executor<T>) => Promise<P>): Promise<P> {
+        const existingConn = transactionContext.getStore();
+
+        if (existingConn) {
+            return callback(
+                new Executor(this.client, this.table, this.schema, existingConn)
+            );
+        }
+
+        const execute = await this.checkout();
+
+        try {
+            return await transactionContext.run(
+                execute.conn!!,
+                () => callback(execute)
+            );
+        } finally {
+            if (this.client.isPool) {
+                execute.release();
+            }
+        }
+    }
+
+
     /**
      * 自动事务包装器
      * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
      * 报错：自动回滚 -> 抛出错误 -> 释放
      */
     async withTransaction<P = any>(callback: (model: Executor<T>) => Promise<P>): Promise<P> {
+        const existingConn = transactionContext.getStore();
+
+        // 如果已经存在事务连接，说明是嵌套事务，直接复用上下文执行即可（避免重复 BEGIN）
+        if (existingConn) {
+            return await callback(new Executor(this.client, this.table, this.schema, existingConn));
+        }
+
         const execute = await this.checkout();
-        let startd = false;
+        let started = false;
         try {
             await execute.beginTransaction();
-            startd = true;
-            const result = await transactionContext.run(
-                execute.conn!!,
-                () => callback(execute)
-            );
+            started = true;
+            const result = await transactionContext.run(execute.conn!!, () => callback(execute));
             await execute.commit();
             return result;
         } catch (error) {
-            if (startd) await execute.rollback().catch(() => { });
+            if (started) {
+                await execute.rollback().catch(() => { });
+            }
             throw error;
         } finally {
-            // 只有是连接池时才需要 release
             if (this.client.isPool) {
                 execute.release();
             }
