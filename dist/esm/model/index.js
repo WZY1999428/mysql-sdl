@@ -161,7 +161,7 @@ class Model {
         }
         const execute = await this.checkout();
         try {
-            return await transactionContext.run(execute.conn, () => callback(execute));
+            return await callback(execute);
         }
         finally {
             if (this.client.isPool) {
