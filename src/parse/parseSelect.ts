@@ -36,7 +36,7 @@ export default function parseSelect(key: string, val: Select, params: any[], sel
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = parseJoin(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        select.push(joinSelect);
+        if (joinSelect.trim() != "") select.push(joinSelect);
     }
 
 

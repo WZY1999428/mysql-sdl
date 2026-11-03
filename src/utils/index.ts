@@ -100,7 +100,6 @@ export function buildFields(fields: Fields | "*" = "*"): { fields: string, param
                 return quote(f);
             } else {
                 if ("$select" in f) {
-                    console.log(f.$select);
                     const selectSql = parseSelect("", f.$select as Select, params);
                     return ` ( ${selectSql.trim()} )`;
                 }
@@ -124,10 +123,16 @@ export function buildFields(fields: Fields | "*" = "*"): { fields: string, param
                         selectFields.push(` ( ${selectSql.trim()} ) AS ${quote(key)}`);
                         continue;
                     }
+
+                    if ("$exists" in obj) {
+                        const selectSql = parseSelect(key, obj.$exists, params);
+                        selectFields.push(` EXISTS  ( ${selectSql.trim()} ) AS ${quote(key)}`);
+                        continue;
+                    }
                 }
                 return selectFields.join(', ');
             }
-        }).join(', ');;
+        }).filter(Boolean).join(', ');;
         return { fields: fieldList, params };
     }
     return { fields, params: [] }; // 如果是字符串且不是 *，建议也处理下或者直接透传

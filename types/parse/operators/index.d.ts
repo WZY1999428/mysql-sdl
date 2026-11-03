@@ -9,6 +9,8 @@ import type { Case } from "./case.js";
 export type FieldExpression = {
     $select: Select;
 } | {
+    $exists: Select;
+} | {
     $case: Case;
 };
 export type Fields = (string | Record<string, FieldExpression> | FieldExpression)[];

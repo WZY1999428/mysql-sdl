@@ -25,7 +25,8 @@ export default function parseSelect(key, val, params, selectMode = SelectMode.se
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = parseJoin(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        select.push(joinSelect);
+        if (joinSelect.trim() != "")
+            select.push(joinSelect);
     }
     const fields = selectMode === SelectMode.exists ? "1" : val.fields?.map((f) => quote(f)).join(", ") || "";
     if (fields)

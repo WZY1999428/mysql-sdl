@@ -83,7 +83,6 @@ export function buildFields(fields = "*") {
             }
             else {
                 if ("$select" in f) {
-                    console.log(f.$select);
                     const selectSql = parseSelect("", f.$select, params);
                     return ` ( ${selectSql.trim()} )`;
                 }
@@ -104,10 +103,15 @@ export function buildFields(fields = "*") {
                         selectFields.push(` ( ${selectSql.trim()} ) AS ${quote(key)}`);
                         continue;
                     }
+                    if ("$exists" in obj) {
+                        const selectSql = parseSelect(key, obj.$exists, params);
+                        selectFields.push(` EXISTS  ( ${selectSql.trim()} ) AS ${quote(key)}`);
+                        continue;
+                    }
                 }
                 return selectFields.join(', ');
             }
-        }).join(', ');
+        }).filter(Boolean).join(', ');
         ;
         return { fields: fieldList, params };
     }

@@ -97,7 +97,6 @@ function buildFields(fields = "*") {
             }
             else {
                 if ("$select" in f) {
-                    console.log(f.$select);
                     const selectSql = (0, parseSelect_js_1.default)("", f.$select, params);
                     return ` ( ${selectSql.trim()} )`;
                 }
@@ -118,10 +117,15 @@ function buildFields(fields = "*") {
                         selectFields.push(` ( ${selectSql.trim()} ) AS ${quote(key)}`);
                         continue;
                     }
+                    if ("$exists" in obj) {
+                        const selectSql = (0, parseSelect_js_1.default)(key, obj.$exists, params);
+                        selectFields.push(` EXISTS  ( ${selectSql.trim()} ) AS ${quote(key)}`);
+                        continue;
+                    }
                 }
                 return selectFields.join(', ');
             }
-        }).join(', ');
+        }).filter(Boolean).join(', ');
         ;
         return { fields: fieldList, params };
     }

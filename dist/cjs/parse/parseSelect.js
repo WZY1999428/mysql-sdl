@@ -31,7 +31,8 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = (0, parseJoin_js_1.default)(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        select.push(joinSelect);
+        if (joinSelect.trim() != "")
+            select.push(joinSelect);
     }
     const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
     if (fields)
