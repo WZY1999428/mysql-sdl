@@ -19,6 +19,7 @@ exports.normalizeSqlValue = normalizeSqlValue;
 exports.throwError = throwError;
 const parseSelect_js_1 = __importDefault(require("../parse/parseSelect.js"));
 const parseCase_js_1 = __importDefault(require("../parse/parseCase.js"));
+const parseFieldExpression_js_1 = require("../parse/parseFieldExpression.js");
 function quote(identifier) {
     // 1. 空值或 * 不处理
     if (!identifier || identifier === '*')
@@ -87,49 +88,36 @@ function parseObjectKeys(datas) {
     return parts.join('|');
 }
 function buildFields(fields = "*") {
-    if (fields === "*")
+    if (fields === "*") {
         return { fields: "*", params: [] };
-    if (Array.isArray(fields)) {
-        let params = [];
-        const fieldList = fields.map(f => {
-            if (typeof f === "string") {
-                return quote(f);
-            }
-            else {
-                if ("$select" in f) {
-                    const selectSql = (0, parseSelect_js_1.default)("", f.$select, params);
-                    return ` ( ${selectSql.trim()} )`;
-                }
-                if ("$case" in f) {
-                    const caseSql = (0, parseCase_js_1.default)("", f.$case, params);
-                    return ` ( ${caseSql.trim()} )`;
-                }
-                // 处理 Select 类型
-                const selectFields = [];
-                for (const [key, obj] of Object.entries(f)) {
-                    if ("$case" in obj) {
-                        const caseSql = (0, parseCase_js_1.default)(key, obj.$case, params);
-                        selectFields.push(`(${caseSql}) AS ${quote(key)}`);
-                        continue;
-                    }
-                    if ("$select" in obj) {
-                        const selectSql = (0, parseSelect_js_1.default)(key, obj.$select, params);
-                        selectFields.push(` ( ${selectSql.trim()} ) AS ${quote(key)}`);
-                        continue;
-                    }
-                    if ("$exists" in obj) {
-                        const selectSql = (0, parseSelect_js_1.default)(key, obj.$exists, params);
-                        selectFields.push(` EXISTS  ( ${selectSql.trim()} ) AS ${quote(key)}`);
-                        continue;
-                    }
-                }
-                return selectFields.join(', ');
-            }
-        }).filter(Boolean).join(', ');
-        ;
-        return { fields: fieldList, params };
     }
-    return { fields, params: [] }; // 如果是字符串且不是 *，建议也处理下或者直接透传
+    if (!Array.isArray(fields)) {
+        return { fields, params: [] };
+    }
+    const params = [];
+    const fieldList = fields.flatMap(field => {
+        // 普通字段
+        if (typeof field === "string") {
+            return quote(field);
+        }
+        // 单独的表达式
+        if ("$select" in field) {
+            const sql = (0, parseSelect_js_1.default)("", field.$select, params);
+            return `( ${sql.trim()} )`;
+        }
+        if ("$case" in field) {
+            const sql = (0, parseCase_js_1.default)("", field.$case, params);
+            return `( ${sql.trim()} )`;
+        }
+        // 对象形式的多个字段表达式
+        return Object.entries(field).map(([key, expression]) => {
+            return (0, parseFieldExpression_js_1.parseFieldExpression)(key, expression, params);
+        });
+    }).filter(Boolean);
+    return {
+        fields: fieldList.join(", "),
+        params
+    };
 }
 function normalizeSqlValue(value) {
     if (typeof value === "object" && value != null) {

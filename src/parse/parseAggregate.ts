@@ -138,7 +138,7 @@ function joinSpec<T>(type: string, spec: A<T>, params: any[]) {
 
             }
 
-            if (spec.from) str += `( SELECT ${type}(${spec.field}) FROM ${quote(spec.from)}${where}) `;
+            if (spec.from) str += `( SELECT ${type}(${spec.field}) FROM ${quote(spec.from)} ${where} ) `;
 
             else str += ` ${type}(${spec.field}) `
 

@@ -8,8 +8,16 @@ const parseJoin_js_1 = __importDefault(require("../parse/parseJoin.js"));
 const index_js_1 = require("../utils/index.js");
 const conditional_js_1 = require("./operators/conditional.js");
 const parseQuery_js_1 = require("./parseQuery.js");
+// 聚合函数映射
+const aggregateMap = {
+    [conditional_js_1.SelectMode.count]: "COUNT",
+    [conditional_js_1.SelectMode.max]: "MAX",
+    [conditional_js_1.SelectMode.min]: "MIN",
+    [conditional_js_1.SelectMode.sum]: "SUM",
+    [conditional_js_1.SelectMode.avg]: "AVG"
+};
 function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.select) {
-    if (typeof val !== "object") {
+    if (!val || typeof val !== "object" || Array.isArray(val)) {
         (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires an object.`);
     }
     if (!val.table || typeof val.table !== "string") {
@@ -18,11 +26,19 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
     if (val.fields && !Array.isArray(val.fields)) {
         (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
     }
-    let limitStr = '';
+    const aggregate = aggregateMap[selectMode];
+    // 聚合操作必须指定且只能指定一个字段
+    if (aggregate && (!val.fields || val.fields.length !== 1)) {
+        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires exactly one field.`);
+    }
+    let limitStr = "";
     if (val.limit !== undefined && val.limit !== null) {
         const limit = Number(val.limit);
         const offset = val.offset ? Number(val.offset) : 0;
-        // 推荐使用 MySQL 兼容性最好的 "LIMIT offset, count" 格式
+        if (!Number.isInteger(limit) || limit < 0 ||
+            !Number.isInteger(offset) || offset < 0) {
+            (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" has an invalid limit or offset.`);
+        }
         limitStr = ` LIMIT ${offset}, ${limit}`;
     }
     let joinSql = "";
@@ -31,18 +47,24 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
         const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = (0, parseJoin_js_1.default)(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        if (joinSelect.trim() != "")
+        if (joinSelect.trim() !== "") {
             select.push(joinSelect);
+        }
     }
-    const fields = selectMode === conditional_js_1.SelectMode.exists ? "1" : val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
-    if (fields)
+    const fields = val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
+    // SELECT 字段处理
+    if (selectMode === conditional_js_1.SelectMode.exists) {
+        select.push("1");
+    }
+    else if (aggregate) {
+        select.push(`${aggregate}(${fields})`);
+    }
+    else if (fields) {
         select.push(fields);
-    if (val.offset) {
-        limitStr += ` OFFSET ${val.offset}`;
     }
     let whereStr = "";
     if (val.query) {
         whereStr = ` WHERE ${(0, parseQuery_js_1.parse)(val.query, params)}`;
     }
-    return ` SELECT ${select.join(", ")} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr}  `;
+    return ` SELECT ${select.join(", ")} FROM ${(0, index_js_1.quote)(val.table)} ${joinSql} ${whereStr} ${limitStr} `;
 }

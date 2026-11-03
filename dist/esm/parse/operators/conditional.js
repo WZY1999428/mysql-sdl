@@ -1,7 +1,12 @@
 export var SelectMode;
 (function (SelectMode) {
-    SelectMode["select"] = "$select";
-    SelectMode["exists"] = "$exists";
+    SelectMode["select"] = "select";
+    SelectMode["exists"] = "exists";
+    SelectMode["count"] = "count";
+    SelectMode["max"] = "max";
+    SelectMode["min"] = "min";
+    SelectMode["sum"] = "sum";
+    SelectMode["avg"] = "avg";
 })(SelectMode || (SelectMode = {}));
 export const QueryOperatorMap = {
     '$eq': "=",

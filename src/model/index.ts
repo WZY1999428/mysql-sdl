@@ -165,12 +165,6 @@ class Model<T> {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     async checkout(): Promise<Executor<T>> {
-        const transactionConn = transactionContext.getStore();
-        if (transactionConn) {
-            // 绑定当前事务连接，不拥有该连接
-            return new Executor(this.client, this.table, this.schema, transactionConn);
-        }
-
         const conn = await this.client.getConnection();
         if (!conn) throw new Error("[ODM] Failed to get database connection");
         // 这里的第四个参数 release 传 false，表示 executor 执行方法后不自动释放
@@ -199,7 +193,7 @@ class Model<T> {
             return await callback(execute);
         } finally {
             if (this.client.isPool) {
-                execute.release();
+                await execute.release();
             }
         }
     }
@@ -233,7 +227,7 @@ class Model<T> {
             throw error;
         } finally {
             if (this.client.isPool) {
-                execute.release();
+                await execute.release();
             }
         }
     }

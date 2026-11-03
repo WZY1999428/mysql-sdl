@@ -95,7 +95,7 @@ function joinSpec(type, spec, params) {
                 params.push(...paramsWhere);
             }
             if (spec.from)
-                str += `( SELECT ${type}(${spec.field}) FROM ${(0, index_js_1.quote)(spec.from)}${where}) `;
+                str += `( SELECT ${type}(${spec.field}) FROM ${(0, index_js_1.quote)(spec.from)} ${where} ) `;
             else
                 str += ` ${type}(${spec.field}) `;
             if (spec.as)

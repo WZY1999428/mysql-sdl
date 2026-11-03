@@ -59,27 +59,44 @@ class Executor {
             console.warn("[Schema Warning] Single connection mode does not require 'release()'.");
         }
     }
+    // async execute(joinSql: string, params: any[]) {
+    //     if (Executor.logger) {
+    //         console.log("\n========== SQL DEBUG ==========\n");
+    //         debug.loggerSql(joinSql, params);
+    //         console.log("\n===============================\n");
+    //         const start = performance.now();
+    //         let result
+    //         if (this.conn) {
+    //             result = await this.client.withConnExecute(this.conn, joinSql, params);
+    //         }
+    //         result = await this.client.execute(joinSql, params);
+    //         const elapsed = (performance.now() - start).toFixed(2);
+    //         console.log(`[SQL ${elapsed}ms]`);
+    //         return result;
+    //     } else {
+    //         if (this.conn) {
+    //             return await this.client.withConnExecute(this.conn, joinSql, params);
+    //         }
+    //         return await this.client.execute(joinSql, params);
+    //     }
+    // }
     async execute(joinSql, params) {
+        const start = performance.now();
+        let result;
+        if (this.conn) {
+            result = await this.client.withConnExecute(this.conn, joinSql, params);
+        }
+        else {
+            result = await this.client.execute(joinSql, params);
+        }
         if (Executor.logger) {
             console.log("\n========== SQL DEBUG ==========\n");
             debug.loggerSql(joinSql, params);
-            console.log("\n===============================\n");
-            const start = performance.now();
-            let result;
-            if (this.conn) {
-                result = await this.client.withConnExecute(this.conn, joinSql, params);
-            }
-            result = await this.client.execute(joinSql, params);
             const elapsed = (performance.now() - start).toFixed(2);
             console.log(`[SQL ${elapsed}ms]`);
-            return result;
+            console.log("\n===============================\n");
         }
-        else {
-            if (this.conn) {
-                return await this.client.withConnExecute(this.conn, joinSql, params);
-            }
-            return await this.client.execute(joinSql, params);
-        }
+        return result;
     }
     async findOne(query, options = {}) {
         if (typeof this.schema.hooks.beforeFind === "function") {

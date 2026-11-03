@@ -143,11 +143,6 @@ class Model {
     * 注意：使用完毕后必须手动调用 executor.release() 归还连接。
     */
     async checkout() {
-        const transactionConn = transactionContext.getStore();
-        if (transactionConn) {
-            // 绑定当前事务连接，不拥有该连接
-            return new executor_js_1.default(this.client, this.table, this.schema, transactionConn);
-        }
         const conn = await this.client.getConnection();
         if (!conn)
             throw new Error("[ODM] Failed to get database connection");
@@ -170,7 +165,7 @@ class Model {
         }
         finally {
             if (this.client.isPool) {
-                execute.release();
+                await execute.release();
             }
         }
     }
@@ -202,7 +197,7 @@ class Model {
         }
         finally {
             if (this.client.isPool) {
-                execute.release();
+                await execute.release();
             }
         }
     }

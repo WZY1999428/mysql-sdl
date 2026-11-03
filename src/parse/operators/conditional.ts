@@ -16,8 +16,13 @@ import { Query } from "./index.js"
 import type { Join } from "./aggregate.js"
 export type SelectType = "raw" | "jsonObject" | "jsonArray" | "count";
 export enum SelectMode {
-        select = "$select",
-        exists = "$exists"
+    select = "select",
+    exists = "exists",
+    count = "count",
+    max = "max",
+    min = "min",
+    sum = "sum",
+    avg = "avg"
 }
 export const QueryOperatorMap = {
         '$eq': "=",

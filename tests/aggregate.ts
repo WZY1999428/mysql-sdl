@@ -17,11 +17,29 @@ console.log(userRole.qualifyField("userId")) //   'user_role.userId'
 
 // })
 
-
 // 连表查询 
 // const joinsResult = await userRole.aggregate({
 //     // 需要显示的字段
 //     fields: ["user.id"],
+//     specs:[
+//     {
+//         $max: {
+//             field: "duration",
+//             from: "music_song_audio",
+//             where: {
+//                 songId: 10001
+//             },
+//             as: "maxDuration"
+//         }
+//     },
+//     {
+//         $count: {
+//             field: "id",
+//             from: "music_song_audio",
+//             as: "audioTotal"
+//         }
+//     }
+// ],
 //     // 查询条件
 //     query: {
 //         "user_role.id": { $eq: 10004 }

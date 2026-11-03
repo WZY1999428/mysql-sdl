@@ -9,6 +9,16 @@ import type { Case } from "./case.js";
 export type FieldExpression = {
     $select: Select;
 } | {
+    $count: Select;
+} | {
+    $max: Select;
+} | {
+    $min: Select;
+} | {
+    $sum: Select;
+} | {
+    $avg: Select;
+} | {
     $exists: Select;
 } | {
     $case: Case;
