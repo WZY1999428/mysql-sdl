@@ -95,10 +95,14 @@ class Executor<T> {
     // }
 
     async execute(joinSql: string, params: any[]) {
-        const start = performance.now();
-
+        
+        if (Executor.logger) {
+            console.log("\n========== SQL DEBUG ==========\n");
+            debug.loggerSql(joinSql, params);
+            console.log("\n===============================\n");
+        }
         let result;
-
+        const start = performance.now();
         if (this.conn) {
             result = await this.client.withConnExecute(
                 this.conn,
@@ -108,15 +112,12 @@ class Executor<T> {
         } else {
             result = await this.client.execute(joinSql, params);
         }
-
+        
         if (Executor.logger) {
-            console.log("\n========== SQL DEBUG ==========\n");
-            debug.loggerSql(joinSql, params);
-
             const elapsed = (performance.now() - start).toFixed(2);
             console.log(`[SQL ${elapsed}ms]`);
-            console.log("\n===============================\n");
         }
+
 
         return result;
     }
