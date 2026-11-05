@@ -10,6 +10,24 @@ const aggregateMap = {
     [SelectMode.sum]: "SUM",
     [SelectMode.avg]: "AVG"
 };
+/**
+ * 将 JOIN SELECT 转换成 JSON_OBJECT 参数
+ *
+ * 例如：
+ * IF(...) AS `cover`
+ *
+ * 转换成：
+ * 'cover', IF(...)
+ */
+function toJsonObjectFields(fields) {
+    return fields.map(field => {
+        const match = field.match(/^([\s\S]+)\s+AS\s+`([^`]+)`$/i);
+        if (!match) {
+            throwError(`JSON select field requires an alias: ${field}`);
+        }
+        return `'${match[2]}', ${match[1]}`;
+    });
+}
 export default function parseSelect(key, val, params, selectMode = SelectMode.select) {
     if (!val || typeof val !== "object" || Array.isArray(val)) {
         throwError(`"${selectMode}" operator at "${key}" requires an object.`);
@@ -17,14 +35,15 @@ export default function parseSelect(key, val, params, selectMode = SelectMode.se
     if (!val.table || typeof val.table !== "string") {
         throwError(`"${selectMode}" operator at "${key}" requires a "table" property.`);
     }
-    if (val.fields && !Array.isArray(val.fields) && typeof val.fields !== "object") {
-        throwError(`"${selectMode}" operator at "${key}" requires "fields" property.`);
+    if (val.fields && !Array.isArray(val.fields)) {
+        throwError(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
     }
     const aggregate = aggregateMap[selectMode];
     // 聚合操作必须指定且只能指定一个字段
-    if (aggregate && (!Array.isArray(val.fields) || val.fields.length !== 1)) {
+    if (aggregate && (!val.fields || val.fields.length !== 1)) {
         throwError(`"${selectMode}" operator at "${key}" requires exactly one field.`);
     }
+    // LIMIT
     let limitStr = "";
     if (val.limit !== undefined && val.limit !== null) {
         const limit = Number(val.limit);
@@ -35,51 +54,96 @@ export default function parseSelect(key, val, params, selectMode = SelectMode.se
         }
         limitStr = ` LIMIT ${offset}, ${limit}`;
     }
+    // JOIN
     let joinSql = "";
-    const select = [];
+    let joinSelect = [];
     if (val.joins && Array.isArray(val.joins)) {
-        const { joinSql: joinSqlStr, select: joinSelect, params: joinParams } = parseJoin(val.joins);
+        const { joinSql: joinSqlStr, select: joinSelectStr, params: joinParams } = parseJoin(val.joins);
         params.push(...joinParams);
         joinSql = joinSqlStr;
-        if (joinSelect.trim() !== "") {
-            select.push(joinSelect);
+        if (joinSelectStr.trim()) {
+            joinSelect = joinSelectStr
+                .split(/,\s*(?![^()]*\))/)
+                .filter(Boolean);
         }
     }
-    // ==================== 核心修改：处理不同 type (jsonObject / jsonArray 等) ====================
-    if (val.type === "jsonObject") {
-        // 如果 fields 是对象，例如 { url: "upload.url", id: "upload.id" }
-        // 转换成 MySQL 的 JSON_OBJECT('url', `upload`.`url`, 'id', `upload`.`id`) AS `alias`
-        if (val.fields && typeof val.fields === "object" && !Array.isArray(val.fields)) {
-            const pairs = Object.entries(val.fields)
-                .map(([k, v]) => `'${k}', ${v}`)
-                .join(", ");
-            const jsonExpr = `JSON_OBJECT(${pairs})`;
-            const alias = val.alias ? ` AS ${quote(val.alias)}` : "";
-            select.push(`${jsonExpr}${alias}`);
-        }
-    }
-    else if (val.type === "jsonArray") {
-        // 后续如果需要支持 jsonArray 可以在这里扩展
-    }
-    else {
-        // 普通字段处理
-        const fields = Array.isArray(val.fields)
-            ? val.fields.map((f) => quote(f)).join(", ")
-            : "";
-        if (selectMode === SelectMode.exists) {
-            select.push("1");
-        }
-        else if (aggregate) {
-            select.push(`${aggregate}(${fields})`);
-        }
-        else if (fields) {
-            select.push(fields);
-        }
-    }
-    // ===========================================================================================
+    // WHERE
     let whereStr = "";
     if (val.query) {
         whereStr = ` WHERE ${parse(val.query, params)}`;
     }
-    return ` SELECT ${select.join(", ")} FROM ${quote(val.table)} ${joinSql} ${whereStr} ${limitStr} `;
+    const tableSql = quote(val.table);
+    // 普通字段
+    const fields = val.fields?.map(field => quote(field)) ?? [];
+    // JOIN 字段
+    const jsonJoinFields = toJsonObjectFields(joinSelect);
+    // JSON_OBJECT 参数
+    const jsonFields = [
+        ...fields.flatMap(field => {
+            const alias = field.split(".").pop().replace(/`/g, "");
+            return [`'${alias}'`, field];
+        }),
+        ...jsonJoinFields
+    ];
+    // JSON_OBJECT
+    const jsonObject = `JSON_OBJECT(${jsonFields.join(", ")})`;
+    // JSON_ARRAY
+    if (val.type === "jsonArray") {
+        return `
+            SELECT IF(
+                COUNT(*) = 0,
+                JSON_ARRAY(),
+                JSON_ARRAYAGG(\`__json\`)
+            )
+            FROM (
+                SELECT ${jsonObject} AS \`__json\`
+                FROM ${tableSql}
+                ${joinSql}
+                ${whereStr}
+                ${limitStr}
+            ) AS \`__json_rows\`
+        `;
+    }
+    // JSON_OBJECT
+    if (val.type === "jsonObject") {
+        return `
+            SELECT ${jsonObject}
+            FROM ${tableSql}
+            ${joinSql}
+            ${whereStr}
+            ${limitStr || " LIMIT 1"}
+        `;
+    }
+    // COUNT
+    if (val.type === "count") {
+        return `
+            SELECT COUNT(*)
+            FROM ${tableSql}
+            ${joinSql}
+            ${whereStr}
+        `;
+    }
+    // RAW
+    if (val.type === "raw") {
+        return fields.join(", ");
+    }
+    // 普通 SELECT / EXISTS / 聚合
+    const select = [];
+    if (selectMode === SelectMode.exists) {
+        select.push("1");
+    }
+    else if (aggregate) {
+        select.push(`${aggregate}(${fields.join(", ")})`);
+    }
+    else if (fields.length) {
+        select.push(...fields);
+    }
+    select.push(...joinSelect);
+    return `
+        SELECT ${select.join(", ")}
+        FROM ${tableSql}
+        ${joinSql}
+        ${whereStr}
+        ${limitStr}
+    `;
 }
