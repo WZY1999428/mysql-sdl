@@ -1,4 +1,3 @@
-
 import parseJoin from "../parse/parseJoin.js"
 import { throwError, quote } from "../utils/index.js";
 
@@ -30,18 +29,17 @@ export default function parseSelect(
         throwError(`"${selectMode}" operator at "${key}" requires a "table" property.`);
     }
 
-    if (val.fields && !Array.isArray(val.fields)) {
-        throwError(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
+    if (val.fields && !Array.isArray(val.fields) && typeof val.fields !== "object") {
+        throwError(`"${selectMode}" operator at "${key}" requires "fields" property.`);
     }
-
 
     const aggregate = aggregateMap[selectMode as keyof typeof aggregateMap];
 
     // 聚合操作必须指定且只能指定一个字段
-    if (aggregate && (!val.fields || val.fields.length !== 1)) {
+    if (aggregate && (!Array.isArray(val.fields) || val.fields.length !== 1)) {
         throwError(`"${selectMode}" operator at "${key}" requires exactly one field.`);
     }
-
+     
     let limitStr = "";
 
     if (val.limit !== undefined && val.limit !== null) {
@@ -74,16 +72,35 @@ export default function parseSelect(
         }
     }
 
-    const fields = val.fields?.map((f: string) => quote(f)).join(", ") || "";
+    // ==================== 核心修改：处理不同 type (jsonObject / jsonArray 等) ====================
+    if (val.type === "jsonObject") {
+        // 如果 fields 是对象，例如 { url: "upload.url", id: "upload.id" }
+        // 转换成 MySQL 的 JSON_OBJECT('url', `upload`.`url`, 'id', `upload`.`id`) AS `alias`
+        if (val.fields && typeof val.fields === "object" && !Array.isArray(val.fields)) {
+            const pairs = Object.entries(val.fields)
+                .map(([k, v]) => `'${k}', ${v}`)
+                .join(", ");
+            const jsonExpr = `JSON_OBJECT(${pairs})`;
+            const alias = val.alias ? ` AS ${quote(val.alias)}` : "";
+            select.push(`${jsonExpr}${alias}`);
+        }
+    } else if (val.type === "jsonArray") {
+        // 后续如果需要支持 jsonArray 可以在这里扩展
+    } else {
+        // 普通字段处理
+        const fields = Array.isArray(val.fields) 
+            ? val.fields.map((f: string) => quote(f)).join(", ") 
+            : "";
 
-    // SELECT 字段处理
-    if (selectMode === SelectMode.exists) {
-        select.push("1");
-    } else if (aggregate) {
-        select.push(`${aggregate}(${fields})`);
-    } else if (fields) {
-        select.push(fields);
+        if (selectMode === SelectMode.exists) {
+            select.push("1");
+        } else if (aggregate) {
+            select.push(`${aggregate}(${fields})`);
+        } else if (fields) {
+            select.push(fields);
+        }
     }
+    // ===========================================================================================
 
     let whereStr = "";
 

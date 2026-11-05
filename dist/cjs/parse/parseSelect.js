@@ -23,12 +23,12 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
     if (!val.table || typeof val.table !== "string") {
         (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "table" property.`);
     }
-    if (val.fields && !Array.isArray(val.fields)) {
-        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires a "fields" property as an array.`);
+    if (val.fields && !Array.isArray(val.fields) && typeof val.fields !== "object") {
+        (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires "fields" property.`);
     }
     const aggregate = aggregateMap[selectMode];
     // 聚合操作必须指定且只能指定一个字段
-    if (aggregate && (!val.fields || val.fields.length !== 1)) {
+    if (aggregate && (!Array.isArray(val.fields) || val.fields.length !== 1)) {
         (0, index_js_1.throwError)(`"${selectMode}" operator at "${key}" requires exactly one field.`);
     }
     let limitStr = "";
@@ -51,17 +51,38 @@ function parseSelect(key, val, params, selectMode = conditional_js_1.SelectMode.
             select.push(joinSelect);
         }
     }
-    const fields = val.fields?.map((f) => (0, index_js_1.quote)(f)).join(", ") || "";
-    // SELECT 字段处理
-    if (selectMode === conditional_js_1.SelectMode.exists) {
-        select.push("1");
+    // ==================== 核心修改：处理不同 type (jsonObject / jsonArray 等) ====================
+    if (val.type === "jsonObject") {
+        // 如果 fields 是对象，例如 { url: "upload.url", id: "upload.id" }
+        // 转换成 MySQL 的 JSON_OBJECT('url', `upload`.`url`, 'id', `upload`.`id`) AS `alias`
+        if (val.fields && typeof val.fields === "object" && !Array.isArray(val.fields)) {
+            const pairs = Object.entries(val.fields)
+                .map(([k, v]) => `'${k}', ${v}`)
+                .join(", ");
+            const jsonExpr = `JSON_OBJECT(${pairs})`;
+            const alias = val.alias ? ` AS ${(0, index_js_1.quote)(val.alias)}` : "";
+            select.push(`${jsonExpr}${alias}`);
+        }
     }
-    else if (aggregate) {
-        select.push(`${aggregate}(${fields})`);
+    else if (val.type === "jsonArray") {
+        // 后续如果需要支持 jsonArray 可以在这里扩展
     }
-    else if (fields) {
-        select.push(fields);
+    else {
+        // 普通字段处理
+        const fields = Array.isArray(val.fields)
+            ? val.fields.map((f) => (0, index_js_1.quote)(f)).join(", ")
+            : "";
+        if (selectMode === conditional_js_1.SelectMode.exists) {
+            select.push("1");
+        }
+        else if (aggregate) {
+            select.push(`${aggregate}(${fields})`);
+        }
+        else if (fields) {
+            select.push(fields);
+        }
     }
+    // ===========================================================================================
     let whereStr = "";
     if (val.query) {
         whereStr = ` WHERE ${(0, parseQuery_js_1.parse)(val.query, params)}`;

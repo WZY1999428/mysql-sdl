@@ -59,6 +59,7 @@ export interface QueryOperators<V> {
 export type Select<T = any> = {
     table: string;
     type?: SelectType;
+    alias?: string;
     fields?: Extract<keyof T, string>[];
     query?: Query<T>;
     joins?: Join[];
