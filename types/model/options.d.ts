@@ -21,8 +21,16 @@ export type InsertOptions = {
 export type insertManyOptions = {
     batchSize?: number;
 } & InsertOptions;
+export type UpdateBatchOptions = {
+    batchSize?: number;
+};
 export type UpdateOptions = {
     upsert?: boolean;
+    /** 分页 */
+    limit?: number;
+    /** 偏移 */
+    offset?: number;
+    sort?: OrderBy<any>;
 };
 export type MathOptions<T> = {
     query?: Query<T>;

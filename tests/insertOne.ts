@@ -1,7 +1,9 @@
-import { userModel } from "./database.ts";
+import { userModel, testSnowflakeModel } from "./database.ts";
 
 // 测试不同的插入操作
 const tasks = [
+    // 测试雪花id 插入
+    testSnowflakeModel.insertOne({ name: "test", age: 18 }),
     // 1. 普通插入：插入一条新数据
     // 如果主键或唯一索引冲突，会抛出错误
     userModel.insertOne({ username: "new_username", nickname: "new_nickname", password: "password", email: "email", phone: "phone", isSuperAdmin: 0, enabled: 1 }),
@@ -24,6 +26,9 @@ const tasks = [
     userModel.insertOne({ username: "new_username", nickname: "new_nickname", password: "password", email: "email", phone: "phone", isSuperAdmin: 0, enabled: 1 }, {
         upsert: ["nickname", "password"]
     })
+
+
+
 ]
 
 // 并行执行所有插入任务

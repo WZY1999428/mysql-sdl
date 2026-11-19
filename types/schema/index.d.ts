@@ -58,6 +58,11 @@ type SchemaHooks<T, P = any> = {
     afterInsert?: (data: T) => Promise<ResultSetHeader>;
     beforeUpdate?: (query: Query<T>, data: Partial<T>) => Promise<[Query<T>, Partial<T>]>;
     afterUpdate?: (data: T) => Promise<ResultSetHeader | any | void>;
+    afterUpdateBatch?: (data: T) => Promise<ResultSetHeader | any | void>;
+    beforeUpdateBatch?: (data: Array<{
+        query: Query<T>;
+        data: Partial<T>;
+    }>) => Promise<ResultSetHeader | any | void>;
     beforeDelete?: (query: Query<T>) => Promise<Query<T>>;
     afterDelete?: (data: T) => Promise<ResultSetHeader>;
     beforeFind?: (query: Query<T>) => Promise<Query<T>>;
@@ -67,6 +72,7 @@ type SchemaHooks<T, P = any> = {
 };
 export declare class Schema<T> {
     fields: FieldsMap<T>;
+    snowflakeSet: Set<string>;
     private tableFields;
     fieldsMap: Map<string, DataType>;
     hooks: SchemaHooks<T>;

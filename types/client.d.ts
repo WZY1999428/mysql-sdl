@@ -5,16 +5,17 @@ type Options = PoolOptions & {
     release?: boolean;
     createDatabase?: boolean;
 };
+import { Snowflake } from "./utils/index.js";
+import { SnowflakeOptions } from "./index.js";
 declare class Client {
     private conn;
     private dbPoll;
+    snowflake: Snowflake;
     isPool: boolean;
-    private release;
-    private database;
     private constructor();
     private static createDataBase;
-    static connection(options: ConnectionOptions): Promise<Client>;
-    static connectionPool(options: Options): Promise<Client>;
+    static connection(options: ConnectionOptions, snowflake: SnowflakeOptions): Promise<Client>;
+    static connectionPool(options: Options, snowflake: SnowflakeOptions): Promise<Client>;
     getConnection(): Promise<newConnection>;
     end(): Promise<void>;
     destroy(): Promise<void>;

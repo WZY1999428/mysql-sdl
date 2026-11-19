@@ -8,6 +8,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Snowflake = void 0;
 exports.quote = quote;
 exports.quoteAll = quoteAll;
 exports.parseJson = parseJson;
@@ -136,3 +137,66 @@ function throwError(msg) {
     error.name = "QueryValidationError";
     throw error;
 }
+class Snowflake {
+    workerId;
+    datacenterId;
+    sequence;
+    lastTimestamp;
+    epoch;
+    workerIdBits;
+    datacenterIdBits;
+    sequenceBits;
+    maxWorkerId;
+    maxDatacenterId;
+    workerIdShift;
+    datacenterIdShift;
+    timestampShift;
+    sequenceMask;
+    constructor(workerId = 1, datacenterId = 1) {
+        this.workerId = BigInt(workerId);
+        this.datacenterId = BigInt(datacenterId);
+        this.sequence = 0n;
+        this.lastTimestamp = -1n;
+        this.epoch = 1704067200000n;
+        this.workerIdBits = 5n;
+        this.datacenterIdBits = 5n;
+        this.sequenceBits = 12n;
+        this.maxWorkerId = (1n << this.workerIdBits) - 1n;
+        this.maxDatacenterId = (1n << this.datacenterIdBits) - 1n;
+        this.workerIdShift = this.sequenceBits;
+        this.datacenterIdShift =
+            this.sequenceBits + this.workerIdBits;
+        this.timestampShift =
+            this.sequenceBits +
+                this.workerIdBits +
+                this.datacenterIdBits;
+        this.sequenceMask = (1n << this.sequenceBits) - 1n;
+        if (this.workerId > this.maxWorkerId ||
+            this.datacenterId > this.maxDatacenterId) {
+            throw new Error("Invalid workerId or datacenterId");
+        }
+    }
+    nextId() {
+        let timestamp = BigInt(Date.now());
+        if (timestamp < this.lastTimestamp) {
+            throw new Error("Clock moved backwards");
+        }
+        if (timestamp === this.lastTimestamp) {
+            this.sequence = (this.sequence + 1n) & this.sequenceMask;
+            if (this.sequence === 0n) {
+                do {
+                    timestamp = BigInt(Date.now());
+                } while (timestamp <= this.lastTimestamp);
+            }
+        }
+        else {
+            this.sequence = 0n;
+        }
+        this.lastTimestamp = timestamp;
+        return (((timestamp - this.epoch) << this.timestampShift) |
+            (this.datacenterId << this.datacenterIdShift) |
+            (this.workerId << this.workerIdShift) |
+            this.sequence).toString();
+    }
+}
+exports.Snowflake = Snowflake;

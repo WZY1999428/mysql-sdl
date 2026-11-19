@@ -175,14 +175,15 @@ function resolveNumberParams(mOrOpt, dOrOpt, opt) {
 }
 // 过滤掉 null/undefined和非法字段
 function sanitizeConstraints(opt = {}) {
-    const { autoIncrement, nullable, primaryKey, unique, required, uniqueGroup, default: defaultValue, index } = opt;
+    const { autoIncrement, nullable, primaryKey, unique, uniqueGroup, default: defaultValue, index } = opt;
     // 重新组合，只保留非 null/undefined 的属性
     return Object.fromEntries(Object.entries({
-        autoIncrement, nullable, primaryKey, unique, required, uniqueGroup, default: defaultValue, index
+        autoIncrement, nullable, primaryKey, unique, uniqueGroup, default: defaultValue, index
     }).filter(([_, v]) => v !== undefined && v !== null));
 }
 class Schema {
     fields;
+    snowflakeSet = new Set();
     tableFields = [];
     fieldsMap;
     hooks;
@@ -263,6 +264,16 @@ class Schema {
         const fieldName = (0, index_js_1.quote)(name);
         const fieldType = config.type;
         definition += `${fieldName} ${config.type}`;
+        if (config.snowflake === true) {
+            const supportedTypes = [
+                DataType.Text,
+                DataType.VarChar
+            ];
+            if (!supportedTypes.includes(fieldType)) {
+                throw new Error(`${name}: snowflake only supports Text and VarChar`);
+            }
+            this.snowflakeSet.add(name);
+        }
         if (fieldType === DataType.Char || fieldType === DataType.VarChar) {
             if (config.length)
                 definition += `(${config.length}) `;
@@ -277,15 +288,17 @@ class Schema {
         }
         if (config.primaryKey === true)
             definition += ' PRIMARY KEY';
-        if (config.autoIncrement === true)
-            definition += ' AUTO_INCREMENT';
         if (config.default !== undefined)
             definition += ` DEFAULT ${config.default}`;
         if (config.onUpdate)
             definition += ` ON UPDATE ${config.onUpdate}`;
-        if (typeof config.autoIncrement === 'object' && config.autoIncrement?.enabled === true) {
-            definition += ' AUTO_INCREMENT';
-            alterTable = `ALTER TABLE \`${this.table}\` AUTO_INCREMENT = ${config.autoIncrement.start};`;
+        if (!config.snowflake) {
+            if (config.autoIncrement === true)
+                definition += ' AUTO_INCREMENT';
+            else if (typeof config.autoIncrement === 'object' && config.autoIncrement?.enabled === true) {
+                definition += ' AUTO_INCREMENT';
+                alterTable = `ALTER TABLE \`${this.table}\` AUTO_INCREMENT = ${config.autoIncrement.start};`;
+            }
         }
         if (config.nullable === false)
             definition += ' NOT NULL';

@@ -29,9 +29,9 @@ export declare const QueryOperatorMap: {
 };
 export interface QueryOperators<V> {
     /** 等于  {age:{$eq:1}} */
-    $eq?: V;
+    $eq?: V | null;
     /** 不等于 {age:{$ne:1}} */
-    $ne?: V;
+    $ne?: V | null;
     /** 大于  {age:{$gt:1}}*/
     $gt?: V;
     /** 大于等于 {ege:{$gte:1}}*/

@@ -33,9 +33,6 @@ class Model {
             throw err;
         }
     }
-    buildExecutor() {
-        return new Executor(this.client, this.table, this.schema);
-    }
     async findMany(query, options = {}) {
         // return this.buildExecutor().findMany(query || {}, options);
         return await this.withCheckout((execute) => {
@@ -80,10 +77,14 @@ class Model {
             return execute.updateOne(query, data);
         });
     }
-    async updateMany(query, data) {
-        // return this.buildExecutor().updateMany(query, data);
+    async updateMany(query, data, options = {}) {
         return await this.withCheckout((execute) => {
-            return execute.updateMany(query, data);
+            return execute.updateMany(query, data, options);
+        });
+    }
+    async updateBatch(batchList) {
+        return await this.withCheckout((execute) => {
+            return execute.updateBatch(batchList);
         });
     }
     async aggregate(options) {

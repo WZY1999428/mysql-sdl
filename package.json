@@ -31,6 +31,7 @@
   "author": "吴志云",
   "license": "ISC",
   "dependencies": {
+    "bson-objectid": "^2.0.4",
     "mysql2": "^3.20.0",
     "sql-formatter": "^15.9.0"
   },

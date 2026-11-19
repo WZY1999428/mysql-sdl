@@ -19,4 +19,22 @@ export declare function buildFields(fields?: Fields | "*"): {
 };
 export declare function normalizeSqlValue(value: any): any;
 export declare function throwError(msg: string): never;
+export declare class Snowflake {
+    workerId: bigint;
+    datacenterId: bigint;
+    sequence: bigint;
+    lastTimestamp: bigint;
+    epoch: bigint;
+    workerIdBits: bigint;
+    datacenterIdBits: bigint;
+    sequenceBits: bigint;
+    maxWorkerId: bigint;
+    maxDatacenterId: bigint;
+    workerIdShift: bigint;
+    datacenterIdShift: bigint;
+    timestampShift: bigint;
+    sequenceMask: bigint;
+    constructor(workerId?: number, datacenterId?: number);
+    nextId(): string;
+}
 //# sourceMappingURL=index.d.ts.map

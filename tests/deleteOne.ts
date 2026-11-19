@@ -11,7 +11,7 @@ const taks = [
     userModel.deleteOne({ createdAt: { $between: ["2025-01-01 00:00:00", "2025-12-31 23:59:59"] } }),
 
     // 存在性检查 - 删除更新时间存在的用户（非 NULL）
-    userModel.deleteOne({ updatedAt: { $exists: true } }),
+    userModel.deleteOne({ updatedAt: { $ne: null } }),
 
     // 模糊匹配 - 删除姓名包含"张"的用户
     userModel.deleteOne({ name: { $like: "%张%" } }),

@@ -1,7 +1,11 @@
 import { Schema, DataType } from "../src/schema/index.ts";
 import MySqlODM from "../src/index.ts"
 const odm = new MySqlODM({
-    debug: true
+    logger: false,
+    snowflake: {
+        workerId: 1,
+        datacenterId: 1
+    }
 });
 
 type User = {
@@ -26,11 +30,17 @@ type UserRole = {
     updatedAt: string,
 }
 
+type TestSnowflake={
+    id?:string,
+    name?:string,
+    age?:number,
+}
+
 await odm.use({
-    host: "localhost",
-    user: "root",
-    password: "123456789",
-    database: "koa-serve"
+    host: "192.168.0.105",
+    user: "hkta",
+    password: "7ExJ,wc4Q58@2TRD",
+    database: "koa-serve-dev"
 }, "connection")
 
 
@@ -76,6 +86,13 @@ const songArtistSchema = new Schema({
 });
 
 
+// 使用雪花算法
+const testSnowflakeSchema = new Schema<TestSnowflake>({
+    id: { type: DataType.VarChar, length: 255, primaryKey: true, snowflake: true },
+    name: { type: DataType.Int, nullable: false },   // 歌曲id
+    age: { type: DataType.Int, nullable: false },    // 演唱者 id
+});
+
 
 const artistSchema = new Schema({
     // 1. 基础信息
@@ -99,6 +116,8 @@ const artistSchema = new Schema({
     enabled: { type: DataType.Int, default: 1 },                          // 状态 (0: 隐藏/下架, 1: 正常展示)
 });
 
+
+export const testSnowflakeModel = await odm.model('test_snowflake', testSnowflakeSchema);
 export const songModel = await odm.model('music_song', songSchema);
 export const songArtistModel = await odm.model('music_song_artist', songArtistSchema);
 export const artistModel = await odm.model('music_artist', artistSchema);

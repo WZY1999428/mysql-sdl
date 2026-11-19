@@ -184,7 +184,9 @@ class Executor {
         }
         let sql = `SELECT ${mathType}(${expr}) AS total FROM ${(0, index_js_2.quote)(this.table)}`;
         if (joins.length) {
-            sql += ` ${(0, parseJoin_js_1.default)(joins).joinSql}`;
+            const { joinSql, params } = (0, parseJoin_js_1.default)(joins);
+            sql += ` ${joinSql}`;
+            paramsWhere.unshift(...params);
         }
         if (sqlWhere) {
             sql += ` WHERE ${sqlWhere}`;
@@ -226,7 +228,16 @@ class Executor {
         }
         return { fields, params };
     }
+    generateSnowflakeIds(data) {
+        for (const key of this.schema.snowflakeSet) {
+            if (data[key] === null || data[key] === undefined) {
+                data[key] = this.client.snowflake.nextId();
+            }
+        }
+        return data;
+    }
     async insertOne(data, opt = {}) {
+        this.generateSnowflakeIds(data);
         if (typeof this.schema.hooks.beforeInsert === "function") {
             data = await this.schema.hooks.beforeInsert(data) || data;
         }
@@ -254,6 +265,7 @@ class Executor {
             throw new Error("[ODM] insertMany data must be an array");
         const batch = [];
         const { ignore = false, upsert = false, batchSize = 100 } = opt;
+        data.forEach(element => this.generateSnowflakeIds(element));
         if (data.length > batchSize) {
             for (let i = 0; i < data.length; i += batchSize) {
                 batch.push(data.slice(i, i + 100));
@@ -320,22 +332,122 @@ class Executor {
         }
         return result;
     }
-    async updateMany(query, data) {
+    async updateMany(query, data, options = {}) {
         if (typeof this.schema.hooks.beforeUpdate === "function") {
             const result = await this.schema.hooks.beforeUpdate(query, data) || [query, data];
             query = result[0];
             data = result[1];
         }
+        const { limit = 0, offset = 0, sort = {} } = options;
+        // 分页参数校验
+        if (!Number.isInteger(limit) || limit < 0) {
+            throw new Error("limit must be a non-negative integer");
+        }
+        if (!Number.isInteger(offset) || offset < 0) {
+            throw new Error("offset must be a non-negative integer");
+        }
+        // 排序 SQL
+        const sortEntries = Object.entries(sort);
+        const orderBySql = sortEntries.length
+            ? `ORDER BY ${sortEntries.map(([field, direction]) => {
+                const order = String(direction).toUpperCase();
+                if (order !== "ASC" && order !== "DESC") {
+                    throw new Error(`Invalid sort direction: ${direction}`);
+                }
+                return `${(0, index_js_2.quote)(field)} ${order}`;
+            }).join(", ")}`
+            : "";
         const { sql: whereSql, params: whereParams } = (0, index_js_1.parseQuery)(query);
         const { sql: assignments, params: values } = (0, index_js_1.parseUpdate)(data, this.schema);
-        const finalSql = `
+        let finalSql;
+        // OFFSET 需要通过子查询实现
+        if (offset > 0) {
+            const primaryKey = (0, index_js_2.quote)("id");
+            const pageLimit = limit > 0
+                ? `LIMIT ${limit}`
+                : "LIMIT 18446744073709551615";
+            finalSql = `
             UPDATE ${(0, index_js_2.quote)(this.table)}
-            SET ${assignments} 
-            WHERE ${whereSql}
+            SET ${assignments}
+            WHERE ${primaryKey} IN (
+                SELECT ${primaryKey}
+                FROM (
+                    SELECT ${primaryKey}
+                    FROM ${(0, index_js_2.quote)(this.table)}
+                    WHERE ${whereSql}
+                    ${orderBySql}
+                    ${pageLimit} OFFSET ${offset}
+                ) AS _update_targets
+            )
         `;
+        }
+        else {
+            // 普通更新，支持 ORDER BY 和 LIMIT
+            finalSql = `
+            UPDATE ${(0, index_js_2.quote)(this.table)}
+            SET ${assignments}
+            WHERE ${whereSql}
+            ${orderBySql}
+            ${limit > 0 ? `LIMIT ${limit}` : ""}
+        `;
+        }
         const result = await this.execute(finalSql, [...values, ...whereParams]);
         if (typeof this.schema.hooks.afterUpdate === "function") {
             return await this.schema.hooks.afterUpdate(result);
+        }
+        return result;
+    }
+    async updateBatch(batchList) {
+        if (!batchList.length) {
+            throw new Error("updateBatch requires at least one item.");
+        }
+        if (typeof this.schema.hooks.beforeUpdateBatch === "function") {
+            batchList = await this.schema.hooks.beforeUpdateBatch(batchList) || batchList;
+        }
+        // 解析所有查询条件
+        const batch = batchList.map(item => ({
+            query: (0, index_js_1.parseQuery)(item.query),
+            data: item.data
+        }));
+        // 收集所有需要更新的字段
+        const fields = [
+            ...new Set(batch.flatMap(item => Object.keys(item.data)))
+        ];
+        if (!fields.length) {
+            throw new Error("updateBatch requires at least one update field.");
+        }
+        const params = [];
+        // 构建 SET
+        const sets = fields.map((field) => {
+            const cases = batch
+                .filter(item => Object.hasOwn(item.data, field))
+                .map(item => {
+                // CASE WHEN 查询条件参数
+                params.push(...item.query.params);
+                // THEN 更新值
+                params.push(item.data[field]);
+                return `WHEN (${item.query.sql}) THEN ?`;
+            });
+            return `${(0, index_js_2.quote)(field)} = CASE
+            ${cases.join("\n")}
+            ELSE ${(0, index_js_2.quote)(field)}
+        END`;
+        });
+        // 构建 WHERE
+        const where = batch.map(item => {
+            params.push(...item.query.params);
+            return `(${item.query.sql})`;
+        });
+        // 拼接 SQL
+        const updateBatchSql = `
+        UPDATE ${this.table}
+        SET ${sets.join(", ")}
+        WHERE ${where.join(" OR ")}
+    `;
+        // 执行 SQL（替换成你 updateOne 使用的执行方法）
+        const result = await this.execute(updateBatchSql, params);
+        if (typeof this.schema.hooks.afterUpdateBatch === "function") {
+            return await this.schema.hooks.afterUpdateBatch(result);
         }
         return result;
     }

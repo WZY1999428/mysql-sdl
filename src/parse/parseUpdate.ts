@@ -56,3 +56,5 @@ export default function parseUpdate<T>(data: Update<T>, schema: Schema<T>): { sq
 
     return { sql: setSql.join(', '), params };
 }
+
+

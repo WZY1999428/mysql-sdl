@@ -5,15 +5,17 @@ class MySqlODM {
     models;
     client = null;
     debug = false;
+    snowflake;
     constructor(options) {
         this.models = new Map();
         Model.logger = options?.logger || false;
+        this.snowflake = options?.snowflake || { workerId: 1, datacenterId: 1 };
         console.log("Database connected");
     }
     async use(options, type = 'pool') {
         this.client = type === 'connection'
-            ? await Client.connection(options)
-            : await Client.connectionPool(options);
+            ? await Client.connection(options, this.snowflake)
+            : await Client.connectionPool(options, this.snowflake);
     }
     async model(table, schema) {
         if (!this.client)

@@ -2,24 +2,29 @@ import Client from "./client.js";
 import type { ConnectionOptions } from "mysql2/promise"
 import { Schema } from "./schema/index.js";
 import Model from "./model/index.js";
-
+export type SnowflakeOptions = {
+    workerId: number;
+    datacenterId: number;
+}
 class MySqlODM {
     models: Map<string, Model<any>>
     client: Client | null = null;
     debug: boolean = false;
-
+    private snowflake: SnowflakeOptions;
     constructor(options?: {
-        logger?: boolean
+        logger?: boolean,
+        snowflake: SnowflakeOptions
     }) {
         this.models = new Map();
         Model.logger = options?.logger || false;
+        this.snowflake = options?.snowflake || { workerId: 1, datacenterId: 1 };
         console.log("Database connected");
     }
 
     async use(options: ConnectionOptions, type: 'connection' | 'pool' = 'pool') {
         this.client = type === 'connection'
-            ? await Client.connection(options)
-            : await Client.connectionPool(options);
+            ? await Client.connection(options, this.snowflake)
+            : await Client.connectionPool(options, this.snowflake);
     }
 
     async model<T>(table: string, schema?: Schema<T>): Promise<Model<T>> {

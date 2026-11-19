@@ -245,14 +245,13 @@ function sanitizeConstraints(opt: FieldConstraints = {}): FieldConstraints {
         nullable,
         primaryKey,
         unique,
-        required,
         uniqueGroup,
         default: defaultValue,
         index
     } = opt;
     // 重新组合，只保留非 null/undefined 的属性
     return Object.fromEntries(Object.entries({
-        autoIncrement, nullable, primaryKey, unique, required, uniqueGroup, default: defaultValue, index
+        autoIncrement, nullable, primaryKey, unique, uniqueGroup, default: defaultValue, index
     }).filter(([_, v]) => v !== undefined && v !== null)
     ) as FieldConstraints;
 }
@@ -270,6 +269,11 @@ type SchemaHooks<T, P = any> = {
     beforeUpdate?: (query: Query<T>, data: Partial<T>) => Promise<[Query<T>, Partial<T>]>;
     // 更新后执行
     afterUpdate?: (data: T) => Promise<ResultSetHeader | any | void>;
+
+    // 更新后执行
+    afterUpdateBatch?: (data: T) => Promise<ResultSetHeader | any | void>;
+    // 更新前执行
+    beforeUpdateBatch?: (data: Array<{ query: Query<T>, data: Partial<T> }>) => Promise<ResultSetHeader | any | void>;
     // 删除前
     beforeDelete?: (query: Query<T>) => Promise<Query<T>>;
     // 删除后
@@ -286,6 +290,7 @@ type SchemaHooks<T, P = any> = {
 
 export class Schema<T> {
     fields: FieldsMap<T>;
+    snowflakeSet: Set<string> = new Set();
     private tableFields: string[] = [];
     fieldsMap: Map<string, DataType>
     hooks: SchemaHooks<T>;
@@ -300,7 +305,6 @@ export class Schema<T> {
         }
         this.hooks = hooks || {};
     }
-
 
     /**
          * 获取带有表名前缀的限定字段名（用于多表联查避免字段名冲突）
@@ -373,6 +377,21 @@ export class Schema<T> {
         const fieldName = quote(name);
         const fieldType = config.type;
         definition += `${fieldName} ${config.type}`
+
+        if (config.snowflake === true) {
+            const supportedTypes = [
+                DataType.Text,
+                DataType.VarChar
+            ];
+
+            if (!supportedTypes.includes(fieldType)) {
+                throw new Error(
+                    `${name}: snowflake only supports Text and VarChar`
+                );
+            }
+            this.snowflakeSet.add(name);
+        }
+
         if (fieldType === DataType.Char || fieldType === DataType.VarChar) {
             if (config.length) definition += `(${config.length}) `
         } else if (fieldType === DataType.Decimal || fieldType === DataType.Float || fieldType === DataType.Double) {
@@ -380,15 +399,18 @@ export class Schema<T> {
         } else if (fieldType === DataType.DateTime || fieldType === DataType.Time || fieldType === DataType.Timestamp) {
             if (config.fps) definition += `(${config.fps}) `
         }
-
         if (config.primaryKey === true) definition += ' PRIMARY KEY';
-        if (config.autoIncrement === true) definition += ' AUTO_INCREMENT';
         if (config.default !== undefined) definition += ` DEFAULT ${config.default}`;
         if (config.onUpdate) definition += ` ON UPDATE ${config.onUpdate}`;
-        if (typeof config.autoIncrement === 'object' && config.autoIncrement?.enabled === true) {
-            definition += ' AUTO_INCREMENT';
-            alterTable = `ALTER TABLE \`${this.table}\` AUTO_INCREMENT = ${config.autoIncrement.start};`;
+
+        if (!config.snowflake) {
+            if (config.autoIncrement === true) definition += ' AUTO_INCREMENT';
+            else if (typeof config.autoIncrement === 'object' && config.autoIncrement?.enabled === true) {
+                definition += ' AUTO_INCREMENT';
+                alterTable = `ALTER TABLE \`${this.table}\` AUTO_INCREMENT = ${config.autoIncrement.start};`;
+            }
         }
+
         if (config.nullable === false) definition += ' NOT NULL';
         if (config.unique === true) definition += ' UNIQUE';
         if (config.index === true) indexs.add(`INDEX idx_${name}(${name})`)

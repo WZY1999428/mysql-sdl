@@ -7,14 +7,17 @@ type Options = PoolOptions & {
     release?: boolean,
     createDatabase?: boolean
 }
+
+import { Snowflake } from "./utils/index.js";
+import { SnowflakeOptions } from "./index.js"
 class Client {
     private conn: Connection | null = null;
     private dbPoll: Pool | null = null;
+     snowflake: Snowflake;
     isPool: boolean = false
-    private release: boolean = false
-    private database: string = ''
-    private constructor(conn: Connection | null = null) {
+    private constructor(conn: Connection | null = null, snowflake: SnowflakeOptions) {
         this.conn = conn;
+        this.snowflake = new Snowflake(snowflake.workerId, snowflake.datacenterId);
     }
 
 
@@ -23,16 +26,16 @@ class Client {
         await (conn as any).query(`USE \`${dbName}\`;`);
     }
 
-    public static async connection(options: ConnectionOptions): Promise<Client> {
+    public static async connection(options: ConnectionOptions, snowflake: SnowflakeOptions): Promise<Client> {
         const { database, ...connectionConfig } = options;
         const conn = await mysql.createConnection(connectionConfig);
         if (database) {
             await Client.createDataBase(database, conn);
         }
-        return new Client(conn);
+        return new Client(conn, snowflake);
     }
 
-    public static async connectionPool(options: Options): Promise<Client> {
+    public static async connectionPool(options: Options, snowflake: SnowflakeOptions): Promise<Client> {
         const { database, createDatabase = false, ...initConfig } = options;
         if (database && createDatabase) {
             const initPool = mysql.createPool(initConfig);
@@ -41,12 +44,10 @@ class Client {
             conn.release();
             await initPool.end();
         }
-        const instance = new Client();
+        const instance = new Client(null, snowflake);
         instance.isPool = true
-        instance.database = database || '';
         const { createDatabase: _, ...poolConfig } = options;
         instance.dbPoll = mysql.createPool(poolConfig);
-        instance.release = options.release || true;
         return instance!
     }
 

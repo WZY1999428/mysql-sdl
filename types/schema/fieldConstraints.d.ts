@@ -4,8 +4,8 @@ type AutoIncrement = {
     start: number;
 };
 export type FieldConstraints = {
-    required?: boolean | undefined;
     primaryKey?: boolean | undefined;
+    snowflake?: boolean | undefined;
     autoIncrement?: boolean | AutoIncrement | undefined;
     default?: any | undefined;
     nullable?: boolean | undefined;

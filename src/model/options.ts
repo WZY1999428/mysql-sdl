@@ -6,16 +6,16 @@ import type { Join } from "../parse/operators/aggregate.js"
 
 export type FindOneOptions<T> = {
     // 字段
-    fields?: Fields,
+    fields?: Fields;
     // 排序
     sort?: OrderBy<T>
 }
 
 export type FindOptions<T> = FindOneOptions<T> & {
     /** 分页 */
-    limit?: number,
+    limit?: number;
     /** 偏移 */
-    offset?: number,
+    offset?: number;
 }
 
 export type InsertOptions = {
@@ -29,11 +29,20 @@ export type insertManyOptions = {
     batchSize?: number
 } & InsertOptions
 
+export type UpdateBatchOptions = {
+    batchSize?: number
+}
 
-export type UpdateOptions = {
+export type UpdateOptions  = {
     // Update operations don't support upsert (use insert with upsert option instead)
     upsert?: boolean;
+    /** 分页 */
+    limit?: number;
+    /** 偏移 */
+    offset?: number;
+    sort?: OrderBy<any>;
 }
+
 
 
 

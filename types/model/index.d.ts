@@ -2,7 +2,7 @@ import Cleint from "../client.js";
 import Executor from "./executor.js";
 import { Schema } from "../schema/index.js";
 import type { Query } from "../parse/operators/index.js";
-import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, AggregationOptions, MathOptions } from "./options.js";
+import type { FindOptions, FindOneOptions, InsertOptions, UpdateOptions, insertManyOptions, AggregationOptions, MathOptions } from "./options.js";
 import { ResultSetHeader } from "mysql2";
 declare class Model<T> {
     table: string;
@@ -12,7 +12,6 @@ declare class Model<T> {
     static logger: boolean;
     constructor(table: string, schema: Schema<T>, client: Cleint);
     private createTable;
-    private buildExecutor;
     findMany(query?: Query<T>, options?: FindOptions<T>): Promise<import("mysql2").OkPacket | ResultSetHeader | ResultSetHeader[] | import("mysql2").RowDataPacket[] | import("mysql2").RowDataPacket[][] | import("mysql2").OkPacket[] | [import("mysql2").RowDataPacket[], ResultSetHeader] | T | T[]>;
     findOne(query?: Query<T>, options?: FindOneOptions<T>): Promise<(import("mysql2").QueryResult | T | T[]) | undefined>;
     deleteOne(query?: Query<T>): Promise<ResultSetHeader>;
@@ -20,7 +19,11 @@ declare class Model<T> {
     insertOne(data: T, opt?: InsertOptions): Promise<import("mysql2").QueryResult>;
     insertMany(data: T[], opt?: insertManyOptions): Promise<ResultSetHeader>;
     updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader>;
-    updateMany(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader>;
+    updateMany(query: Query<T>, data: Partial<T>, options?: UpdateOptions): Promise<ResultSetHeader>;
+    updateBatch(batchList: Array<{
+        query: Query<T>;
+        data: Partial<T>;
+    }>): Promise<ResultSetHeader>;
     aggregate(options: AggregationOptions<T>): Promise<unknown[]>;
     count<T>(options: MathOptions<T>): Promise<number>;
     sum<T>(options: MathOptions<T>): Promise<number>;

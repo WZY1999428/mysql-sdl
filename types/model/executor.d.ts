@@ -1,8 +1,7 @@
 import type { Query, AggregationOptions } from "../parse/operators/index.js";
-import type { FindOptions, FindOneOptions, InsertOptions, insertManyOptions, MathOptions } from "./options.js";
-import { newConnection } from "../client.js";
+import type { FindOptions, FindOneOptions, InsertOptions, UpdateOptions, insertManyOptions, MathOptions } from "./options.js";
+import Client, { newConnection } from "../client.js";
 import { Schema } from "../schema/index.js";
-import Client from "../client.js";
 import { ResultSetHeader } from "mysql2";
 declare class Executor<T> {
     private client;
@@ -29,10 +28,15 @@ declare class Executor<T> {
     private buildMathSql;
     findMany<T>(query: Query<T>, options?: FindOptions<T>): Promise<import("mysql2").OkPacket | ResultSetHeader | ResultSetHeader[] | import("mysql2").RowDataPacket[] | import("mysql2").RowDataPacket[][] | import("mysql2").OkPacket[] | [import("mysql2").RowDataPacket[], ResultSetHeader] | T_1 | T_1[]>;
     private prepareFields;
+    private generateSnowflakeIds;
     insertOne(data: T, opt?: InsertOptions): Promise<import("mysql2").QueryResult>;
     insertMany<T>(data: T[], opt?: insertManyOptions): Promise<ResultSetHeader>;
     updateOne(query: Query<T>, data: Partial<T>): Promise<ResultSetHeader>;
-    updateMany(query: Query<T>, data: Partial<T>): Promise<any>;
+    updateMany(query: Query<T>, data: Partial<T>, options?: UpdateOptions): Promise<any>;
+    updateBatch(batchList: Array<{
+        query: Query<T>;
+        data: Partial<T>;
+    }>): Promise<ResultSetHeader>;
     deleteOne(query: Query<T>): Promise<ResultSetHeader>;
     deleteMany<T>(query: Query<T>): Promise<ResultSetHeader>;
     clear(): Promise<ResultSetHeader>;
