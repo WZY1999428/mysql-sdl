@@ -258,7 +258,7 @@ class Executor {
         if (typeof this.schema.hooks.afterInsert === "function") {
             return await this.schema.hooks.afterInsert(result);
         }
-        return result;
+        return { ...result, insertData: data };
     }
     async insertMany(data, opt = {}) {
         if (!Array.isArray(data) || data.length === 0)
@@ -283,7 +283,7 @@ class Executor {
             info: '',
             serverStatus: 0,
             warningStatus: 0,
-            changedRows: 0
+            changedRows: 0,
         };
         const insert = async () => {
             for (const batchData of batch) {
@@ -311,7 +311,7 @@ class Executor {
             results.info = `Records: ${results.affectedRows}  Fields: ${results.fieldCount}  Warnings: ${results.warningStatus}`;
         };
         await insert();
-        return results;
+        return { ...results, insertDatas: data };
     }
     async updateOne(query, data) {
         if (typeof this.schema.hooks.beforeUpdate === "function") {

@@ -323,7 +323,7 @@ class Executor<T> {
         if (typeof this.schema.hooks.afterInsert === "function") {
             return await this.schema.hooks.afterInsert(result as any);
         }
-        return result
+        return { ...result, insertData: data }
     }
 
 
@@ -348,7 +348,7 @@ class Executor<T> {
             info: '',
             serverStatus: 0,
             warningStatus: 0,
-            changedRows: 0
+            changedRows: 0,
         } as ResultSetHeader;
         const insert = async () => {
             for (const batchData of batch) {
@@ -372,11 +372,12 @@ class Executor<T> {
                 results.affectedRows += result.affectedRows;
                 results.warningStatus += result.warningStatus;
                 results.fieldCount += result.fieldCount;
+
             }
             results.info = `Records: ${results.affectedRows}  Fields: ${results.fieldCount}  Warnings: ${results.warningStatus}`
         }
         await insert();
-        return results as ResultSetHeader
+        return { ...results, insertDatas: data } as ResultSetHeader
     }
 
 
