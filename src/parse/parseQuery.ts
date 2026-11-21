@@ -222,10 +222,10 @@ function buildWhereClause<T>(value: any, key: string | number, segments: string[
                         const sqlOp = QueryOperatorMap[op as OperatorKeys];
                         segments.push(`${key} ${sqlOp} ${sql}`);
                     } else {
-                        const sqlOp = QueryOperatorMap[op as OperatorKeys];
                         if ((op == "$eq" || op == "$ne") && val === null) {
-                            segments.push(`${key} ${sqlOp} ${op === "$eq" ? "IS NULL" : "IS NOT NULL"}`);
+                            segments.push(`${key} ${op === "$eq" ? "IS NULL" : "IS NOT NULL"}`);
                         } else {
+                            const sqlOp = QueryOperatorMap[op as OperatorKeys];
                             segments.push(`${key} ${sqlOp} ?`);
                             params.push(val);
                         }

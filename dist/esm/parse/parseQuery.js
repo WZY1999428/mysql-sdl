@@ -175,11 +175,11 @@ function buildWhereClause(value, key, segments, params) {
                         segments.push(`${key} ${sqlOp} ${sql}`);
                     }
                     else {
-                        const sqlOp = QueryOperatorMap[op];
                         if ((op == "$eq" || op == "$ne") && val === null) {
-                            segments.push(`${key} ${sqlOp} ${op === "$eq" ? "IS NULL" : "IS NOT NULL"}`);
+                            segments.push(`${key} ${op === "$eq" ? "IS NULL" : "IS NOT NULL"}`);
                         }
                         else {
+                            const sqlOp = QueryOperatorMap[op];
                             segments.push(`${key} ${sqlOp} ?`);
                             params.push(val);
                         }
