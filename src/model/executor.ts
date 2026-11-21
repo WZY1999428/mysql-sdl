@@ -24,7 +24,6 @@ class Executor<T> {
     }
 
 
-
     private buildLimit(limit: number, offset: number): string {
         let limitSql = "";
         if (isFinite(limit) && limit > 0) {

@@ -183,8 +183,13 @@ function buildWhereClause(value, key, segments, params) {
                     }
                     else {
                         const sqlOp = index_js_2.QueryOperatorMap[op];
-                        segments.push(`${key} ${sqlOp} ?`);
-                        params.push(val);
+                        if ((op == "$eq" || op == "$ne") && val === null) {
+                            segments.push(`${key} ${sqlOp} ${op === "$eq" ? "IS NULL" : "IS NOT NULL"}`);
+                        }
+                        else {
+                            segments.push(`${key} ${sqlOp} ?`);
+                            params.push(val);
+                        }
                     }
                 }
             }

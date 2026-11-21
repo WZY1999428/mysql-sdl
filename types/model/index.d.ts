@@ -560,7 +560,7 @@ declare class Model<T> {
      * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
      * 报错：自动回滚 -> 抛出错误 -> 释放
      */
-    withCheckout<P = any>(callback: (execute: Executor<T>) => Promise<P>): Promise<P>;
+    private withCheckout;
     /**
      * 自动事务包装器
      * 逻辑：获取连接 -> 开启事务 -> 执行回调 -> 提交 -> 释放
