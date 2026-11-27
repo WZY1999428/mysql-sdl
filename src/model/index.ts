@@ -43,14 +43,12 @@ class Model<T> {
 
 
     async findMany(query?: Query<T>, options: FindOptions<T> = {}) {
-        // return this.buildExecutor().findMany(query || {}, options);
         return await this.withCheckout((execute) => {
             return execute.findMany(query || {}, options);
         })
     }
 
     async findOne(query?: Query<T>, options: FindOneOptions<T> = {}) {
-        // return this.buildExecutor().findOne(query || {}, options);
         return await this.withCheckout((execute) => {
             return execute.findOne(query || {}, options);
         })
@@ -58,7 +56,6 @@ class Model<T> {
 
 
     async deleteOne(query?: Query<T>) {
-        // return this.buildExecutor().deleteOne(query || {});
         return await this.withCheckout((execute) => {
             return execute.deleteOne(query || {});
         })
@@ -66,14 +63,12 @@ class Model<T> {
 
 
     async deleteMany(query?: Query<T>) {
-        // return this.buildExecutor().deleteMany(query || {});
         return await this.withCheckout((execute) => {
             return execute.deleteMany(query || {});
         })
     }
 
     async insertOne(data: T, opt?: InsertOptions) {
-        // return this.buildExecutor().insertOne(data, opt);
         return await this.withCheckout((execute) => {
             return execute.insertOne(data, opt);
         })
@@ -81,14 +76,12 @@ class Model<T> {
 
     async insertMany(data: T[], opt?: insertManyOptions) {
         if (!Array.isArray(data)) throw new Error("[ODM] insertMany data must be an array");
-        // return execute.insertMany(data, opt);
         return await this.withCheckout((execute) => {
             return execute.insertMany(data, opt);
         })
     }
 
     async updateOne(query: Query<T>, data: Partial<T & any>): Promise<ResultSetHeader> {
-        // return this.buildExecutor().updateOne(query, data);
         return await this.withCheckout((execute) => {
             return execute.updateOne(query, data);
         })
@@ -111,7 +104,6 @@ class Model<T> {
 
 
     async aggregate(options: AggregationOptions<T>) {
-        // return this.buildExecutor().aggregate(options);
         return await this.withCheckout((execute) => {
             return execute.aggregate(options);
         })
@@ -119,35 +111,30 @@ class Model<T> {
 
 
     async count<T>(options: MathOptions<T>): Promise<number> {
-        // return this.buildExecutor().count(options);
         return await this.withCheckout((execute) => {
             return execute.count(options);
         })
     }
 
     async sum<T>(options: MathOptions<T>): Promise<number> {
-        // return this.buildExecutor().sum(options);
         return await this.withCheckout((execute) => {
             return execute.sum(options);
         })
     }
 
     async avg(options?: MathOptions<T>) {
-        // return this.buildExecutor().avg(options || {});
         return await this.withCheckout((execute) => {
             return execute.avg(options || {});
         })
     }
 
     async max(options?: MathOptions<T>) {
-        // return this.buildExecutor().max(options || {});
         return await this.withCheckout((execute) => {
             return execute.max(options || {});
         })
     }
 
     async min(options?: MathOptions<T>) {
-        // return this.buildExecutor().min(options || {});
         return await this.withCheckout((execute) => {
             return execute.min(options || {});
         })

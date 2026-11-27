@@ -1,9 +1,9 @@
 import { isObject, quote } from "../utils/index.js";
 import parseQuery from "./parseQuery.js"
-import { JoinTypeMap, } from "./operators/aggregate.js";
+import { JoinTypeMap, JoinOn } from "./operators/aggregate.js";
 import type { Join } from "./operators/aggregate.js"
 
-const joinOperators: Record<string, string> = {
+const joinOperators: Record<keyof JoinOn, string> = {
     $eq: "=",
     $ne: "!=",
     $gt: ">",
@@ -22,7 +22,7 @@ function parseJoin(joins: Join[]): { joinSql: string; select: string, params: an
     if (!Array.isArray(joins)) {
         throw new Error("joins must be array");
     }
-    
+
     const params: any[] = []
     const joinsList = joins.map(item => {
         let select: string[] = [];
@@ -57,7 +57,7 @@ function parseJoin(joins: Join[]): { joinSql: string; select: string, params: an
                 if (value && typeof value === "object") {
                     return Object.entries(value).map(([operator, operand]) => {
 
-                        const sqlOperator = joinOperators[operator];
+                        const sqlOperator = joinOperators[operator as keyof JoinOn];
 
                         if (!sqlOperator) {
                             throw new Error(`Unsupported JOIN operator: ${operator}`);

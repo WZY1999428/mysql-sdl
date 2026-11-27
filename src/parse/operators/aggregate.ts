@@ -55,6 +55,20 @@ export const JoinTypeMap = {
 }
 
 
+export type JoinOn = {
+    $eq?: string;
+    $ne?: string;
+    $gt?: string;
+    $gte?: string;
+    $lt?: string;
+    $lte?: string;
+    $like?: string;
+    $notLike?: string;
+    $in?: any[];
+    $nin?: any[];
+    $isNull?: string;
+    $isNotNull?: string;
+}
 
 
 // 定义单个导出字段的映射类型
@@ -86,7 +100,7 @@ export type JoinSelectOption =
 // 1. 定义基础的普通 Join
 interface NormalJoin {
     table: string;
-    on: Record<string, string>; // 必填
+    on: Record<string, string | JoinOn>; // 必填
     type?: JoinType;
     as?: string;
     query?: Query<unknown>,

@@ -15,7 +15,10 @@ declare class MySqlODM {
         logger?: boolean;
         snowflake: SnowflakeOptions;
     });
-    use(options: ConnectionOptions, type?: 'connection' | 'pool'): Promise<void>;
+    use(options: ConnectionOptions & {
+        release?: boolean;
+        createDatabase?: boolean;
+    }, type?: 'connection' | 'pool'): Promise<void>;
     model<T>(table: string, schema?: Schema<T>): Promise<Model<T>>;
     getModels(): MapIterator<string>;
 }

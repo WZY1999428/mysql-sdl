@@ -1,6 +1,6 @@
 import { isObject, quote } from "../utils/index.js";
 import parseQuery from "./parseQuery.js";
-import { JoinTypeMap, } from "./operators/aggregate.js";
+import { JoinTypeMap } from "./operators/aggregate.js";
 const joinOperators = {
     $eq: "=",
     $ne: "!=",

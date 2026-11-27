@@ -21,7 +21,7 @@ class MySqlODM {
         console.log("Database connected");
     }
 
-    async use(options: ConnectionOptions, type: 'connection' | 'pool' = 'pool') {
+    async use(options: ConnectionOptions & { release?: boolean, createDatabase?: boolean }, type: 'connection' | 'pool' = 'pool') {
         this.client = type === 'connection'
             ? await Client.connection(options, this.snowflake)
             : await Client.connectionPool(options, this.snowflake);

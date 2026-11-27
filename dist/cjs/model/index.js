@@ -39,31 +39,26 @@ class Model {
         }
     }
     async findMany(query, options = {}) {
-        // return this.buildExecutor().findMany(query || {}, options);
         return await this.withCheckout((execute) => {
             return execute.findMany(query || {}, options);
         });
     }
     async findOne(query, options = {}) {
-        // return this.buildExecutor().findOne(query || {}, options);
         return await this.withCheckout((execute) => {
             return execute.findOne(query || {}, options);
         });
     }
     async deleteOne(query) {
-        // return this.buildExecutor().deleteOne(query || {});
         return await this.withCheckout((execute) => {
             return execute.deleteOne(query || {});
         });
     }
     async deleteMany(query) {
-        // return this.buildExecutor().deleteMany(query || {});
         return await this.withCheckout((execute) => {
             return execute.deleteMany(query || {});
         });
     }
     async insertOne(data, opt) {
-        // return this.buildExecutor().insertOne(data, opt);
         return await this.withCheckout((execute) => {
             return execute.insertOne(data, opt);
         });
@@ -71,13 +66,11 @@ class Model {
     async insertMany(data, opt) {
         if (!Array.isArray(data))
             throw new Error("[ODM] insertMany data must be an array");
-        // return execute.insertMany(data, opt);
         return await this.withCheckout((execute) => {
             return execute.insertMany(data, opt);
         });
     }
     async updateOne(query, data) {
-        // return this.buildExecutor().updateOne(query, data);
         return await this.withCheckout((execute) => {
             return execute.updateOne(query, data);
         });
@@ -93,37 +86,31 @@ class Model {
         });
     }
     async aggregate(options) {
-        // return this.buildExecutor().aggregate(options);
         return await this.withCheckout((execute) => {
             return execute.aggregate(options);
         });
     }
     async count(options) {
-        // return this.buildExecutor().count(options);
         return await this.withCheckout((execute) => {
             return execute.count(options);
         });
     }
     async sum(options) {
-        // return this.buildExecutor().sum(options);
         return await this.withCheckout((execute) => {
             return execute.sum(options);
         });
     }
     async avg(options) {
-        // return this.buildExecutor().avg(options || {});
         return await this.withCheckout((execute) => {
             return execute.avg(options || {});
         });
     }
     async max(options) {
-        // return this.buildExecutor().max(options || {});
         return await this.withCheckout((execute) => {
             return execute.max(options || {});
         });
     }
     async min(options) {
-        // return this.buildExecutor().min(options || {});
         return await this.withCheckout((execute) => {
             return execute.min(options || {});
         });

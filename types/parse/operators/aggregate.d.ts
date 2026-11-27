@@ -39,6 +39,20 @@ export declare const JoinTypeMap: {
     full: string;
     self: string;
 };
+export type JoinOn = {
+    $eq?: string;
+    $ne?: string;
+    $gt?: string;
+    $gte?: string;
+    $lt?: string;
+    $lte?: string;
+    $like?: string;
+    $notLike?: string;
+    $in?: any[];
+    $nin?: any[];
+    $isNull?: string;
+    $isNotNull?: string;
+};
 interface JoinSelectBase {
     fields?: Record<string, string>;
     /**
@@ -60,7 +74,7 @@ export type JoinSelectOption = (JoinSelectBase & {
 });
 interface NormalJoin {
     table: string;
-    on: Record<string, string>;
+    on: Record<string, string | JoinOn>;
     type?: JoinType;
     as?: string;
     query?: Query<unknown>;

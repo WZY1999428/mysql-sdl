@@ -1,4 +1,4 @@
-import { isObject, isStringArray, quote, buildFields } from "../utils/index.js";
+import { isObject, quote, buildFields } from "../utils/index.js";
 import { AggregationOptions, AggregateOption, OneOrMany } from "./operators/index.js"
 import parseQuery from "./parseQuery.js"
 import parseOrder from "./parseOrder.js";
